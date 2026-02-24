@@ -1,0 +1,154 @@
+{
+    "sourceFile": "AGENTS.md",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 34,
+            "patches": [
+                {
+                    "date": 1771906468520,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1771906476509,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,8 @@\n <!--\r\n Add custom instructions for the agents below\r\n -->\r\n \r\n+\r\n * Read everything in the folder called \"ai-context\"\r\n * Go to \"lorejs > games\", and read all of the games\r\n * Code in \"lemegeton.js\".\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771906486491,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,8 @@\n <!--\r\n Add custom instructions for the agents below\r\n -->\r\n \r\n-\r\n+#Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Go to \"lorejs > games\", and read all of the games\r\n * Code in \"lemegeton.js\".\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771906523853,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,8 @@\n <!--\r\n Add custom instructions for the agents below\r\n -->\r\n \r\n-#Info about LoreJS\r\n+# Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n-* Go to \"lorejs > games\", and read all of the games\r\n+* read all of the games.\r\n * Code in \"lemegeton.js\".\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771906533993,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,6 +3,6 @@\n -->\r\n \r\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n-* read all of the games.\r\n+* read everything in the folder \"games\"\r\n * Code in \"lemegeton.js\".\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771906567564,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,6 +3,6 @@\n -->\r\n \r\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n-* read everything in the folder \"games\"\r\n+* read everything in the folder \"nodegames\"\r\n * Code in \"lemegeton.js\".\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771906575261,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,6 +3,6 @@\n -->\r\n \r\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n-* read everything in the folder \"nodegames\"\r\n+* read everything in the folder \"node_modules > loregames\"\r\n * Code in \"lemegeton.js\".\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771907541121,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,6 +3,6 @@\n -->\r\n \r\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n-* read everything in the folder \"node_modules > loregames\"\r\n+* Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909530214,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,5 +4,5 @@\n \r\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n-* Code in \"lemegeton.js\".\n\\ No newline at end of file\n+* Code in \"lemegeton.js\".\r\n"
+                },
+                {
+                    "date": 1771909645623,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,4 +5,5 @@\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n+* Intergrate \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909655480,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,5 +5,5 @@\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n-* Intergrate \n\\ No newline at end of file\n+* Intergrate a terminal from \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909666585,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,5 +5,5 @@\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n-* Intergrate a terminal from \n\\ No newline at end of file\n+* Intergrate a terminal from lore\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909686414,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,5 +5,5 @@\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n-* Intergrate a terminal from lore\n\\ No newline at end of file\n+* Intergrate a terminal from lorejs and use the command: \"\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909693556,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,5 +5,5 @@\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n-* Intergrate a terminal from lorejs and use the command: \"\n\\ No newline at end of file\n+* Intergrate a terminal from lorejs and use the command: \"node \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909703459,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,5 +5,5 @@\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n-* Intergrate a terminal from lorejs and use the command: \"node \n\\ No newline at end of file\n+* Intergrate a terminal from lorejs and use the command: \"node index.js\" to test the game\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909731290,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,9 @@\n+<!--\r\n+Add custom instructions for the agents below\r\n+-->\r\n+\r\n+# Info about LoreJS\r\n+* Read everything in the folder called \"ai-context\"\r\n+* Read everything in the folder \"node_modules > lorejs > games\"\r\n+* Code in \"lemegeton.js\".\r\n+* Intergrate a terminal from folder lorejs and use the command: \"node index.js\" to test the game\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771909737980,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,14 +5,6 @@\n # Info about LoreJS\r\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n-* Intergrate a terminal from folder lorejs and use the command: \"node index.js\" to test the game\n-<!--\r\n-Add custom instructions for the agents below\r\n--->\r\n-\r\n-# Info about LoreJS\r\n-* Read everything in the folder called \"ai-context\"\r\n-* Read everything in the folder \"node_modules > lorejs > games\"\r\n-* Code in \"lemegeton.js\".\r\n-* Intergrate a terminal from lorejs and use the command: \"node index.js\" to test the game\n\\ No newline at end of file\n+* Intergrate a terminal from folder lorejs\r\n+use the command: \"node index.js\" to test the game\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910896294,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -6,5 +6,5 @@\n * Read everything in the folder called \"ai-context\"\r\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n-use the command: \"node index.js\" to test the game\n\\ No newline at end of file\n+* use the command: \"node index.js\" to test the game\r\n"
+                },
+                {
+                    "date": 1771910905074,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,4 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n+* Explore all of the commands, \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910917549,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands, \n\\ No newline at end of file\n+* Explore all of the commands in-game, \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910924455,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game, \n\\ No newline at end of file\n+* Explore all of the commands in-game, then give me \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910933356,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game, then give me \n\\ No newline at end of file\n+* Explore all of the commands in-game, then give me a multiple step \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910941468,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game, then give me a multiple step \n\\ No newline at end of file\n+* Explore all of the commands in-game, then give me a multiple step tutorial on how to play the game.\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910966612,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game, then give me a multiple step tutorial on how to play the game.\n\\ No newline at end of file\n+* Explore all of the commands in-game, then give me an ac multiple step tutorial on how to play the game.\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910971704,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game, then give me an ac multiple step tutorial on how to play the game.\n\\ No newline at end of file\n+* Explore all of the commands in-game, then give me an acurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771910994371,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,5 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game, then give me an acurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n+* Explore all of the commands in-game, then give me an accurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911005545,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,6 @@\n * Read everything in the folder \"node_modules > lorejs > games\"\r\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game, then give me an accurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n+* Explore all of the commands in-game\r\n+give me an accurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911016103,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,5 +8,5 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-give me an accurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n+* give me an accurate multiple step tutorial on how to play the game, \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911021915,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,5 +8,5 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-* give me an accurate multiple step tutorial on how to play the game, \n\\ No newline at end of file\n+* give me an accurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911030793,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,5 +8,5 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-* give me an accurate multiple step tutorial on how to play the game.\n\\ No newline at end of file\n+* give me an accurate multiple step tutorial on how to play the game by \n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911038996,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,5 +8,5 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-* give me an accurate multiple step tutorial on how to play the game by \n\\ No newline at end of file\n+* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order.\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911377122,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,5 +8,6 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order.\n\\ No newline at end of file\n+\r\n+* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911388277,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,6 +8,6 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-\r\n+* test http://localhost:3000\r\n * give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771911398744,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,6 +8,5 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-* test http://localhost:3000\r\n * give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771918970508,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,5 +8,7 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\n\\ No newline at end of file\n+* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\r\n+\r\n+☿\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1771906468520,
+            "name": "Commit-0",
+            "content": "<!--\r\nAdd custom instructions for the agents below\r\n-->\r\n\r\n* Read everything in the folder called \"ai-context\"\r\n* Go to \"lorejs > games\", and read all of the games\r\n* Code in \"lemegeton.js\"."
+        }
+    ]
+}

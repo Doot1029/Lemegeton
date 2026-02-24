@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEMEGETON: Path of the Zenith</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ff-blue-top: #000066;
+            --ff-blue-bottom: #000033;
+            --ff-border: #ffffff;
+            --term-green: #00ff41;
+            --term-magenta: #ff00ff;
+            --term-cyan: #00ffff;
+            --term-yellow: #ffff00;
+            --term-white: #ffffff;
+            --glow: 0 0 10px rgba(0, 255, 255, 0.5);
+            --pixel-font: 'Press Start 2P', cursive;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            background-color: #000;
+            color: var(--term-white);
+            font-family: var(--pixel-font);
+            font-size: 11px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #main-layout {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, var(--ff-blue-top), var(--ff-blue-bottom));
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            z-index: 100;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .ff-window {
+            background: linear-gradient(135deg, rgba(0,0,102,0.85), rgba(0,0,51,0.95));
+            border: 2px solid var(--ff-border);
+            box-shadow: inset 0 0 0 2px #000, 0 0 15px rgba(0,0,0,0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #sidebar { width: 260px; padding: 15px; gap: 15px; flex-shrink: 0; }
+
+        .gui-panel {
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 10px;
+        }
+
+        .gui-header {
+            font-weight: bold;
+            color: var(--term-cyan);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+            font-size: 0.8em;
+        }
+
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.75em; }
+        .stat-value { color: var(--term-white); }
+
+        /* Clock Visual */
+        #heptagram-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 10px auto;
+        }
+
+        .planet-node {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+
+        .planet-node.active-day {
+            border: 2px solid var(--term-yellow);
+            box-shadow: 0 0 15px var(--term-yellow);
+            background: rgba(255, 255, 0, 0.2);
+        }
+
+        .planet-node.active-hour {
+            color: var(--term-magenta);
+            text-shadow: 0 0 8px var(--term-magenta);
+        }
+
+        /* Terminal */
+        #terminal-wrapper { flex: 1; overflow: hidden; }
+
+        .lore-terminal {
+            height: 100% !important;
+            width: 100% !important;
+            background-color: transparent !important;
+            color: var(--term-white) !important;
+            font-family: var(--pixel-font) !important;
+            padding: 15px !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .lore-output {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            margin-bottom: 15px !important;
+            font-size: 10px;
+            line-height: 1.6 !important;
+        }
+
+        .lore-input-container {
+            background: rgba(0, 0, 0, 0.5) !important;
+            padding: 10px !important;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex !important;
+        }
+
+        .lore-input {
+            color: var(--term-cyan) !important;
+            font-family: var(--pixel-font) !important;
+            font-size: 11px !important;
+            background: transparent !important;
+            border: none !important;
+            outline: none !important;
+            flex: 1;
+            margin-left: 10px !important;
+        }
+
+        .lore-output::-webkit-scrollbar { width: 6px; }
+        .lore-output::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="main-layout">
+        <aside id="sidebar" class="ff-window">
+            <div class="gui-panel">
+                <div class="gui-header">Planetary Clock</div>
+                <div id="stat-day-num" class="stat-row"><span>Day</span> <span class="stat-value">1</span></div>
+                <div class="stat-row"><span>Current Day</span> <span id="stat-day-sym" class="stat-value">♄</span></div>
+                <div class="stat-row"><span>Current Hour</span> <span id="stat-hour-sym" class="stat-value">♄</span></div>
+                
+                <div id="heptagram-container">
+                    <!-- Nodes will be positioned by JS -->
+                </div>
+            </div>
+
+            <div class="gui-panel">
+                <div class="gui-header">Vitals</div>
+                <div class="stat-row"><span>SANITY</span> <span id="stat-sanity" class="stat-value">100</span></div>
+                <div class="stat-row"><span>WRATH</span> <span id="stat-wrath" class="stat-value">0</span></div>
+                <div class="stat-row"><span>LOYALTY</span> <span id="stat-loyalty" class="stat-value">0</span></div>
+            </div>
+
+            <div class="gui-panel">
+                <div class="gui-header">Status</div>
+                <div class="stat-row"><span>RANK</span> <span id="stat-rank" class="stat-value">Novice</span></div>
+                <div class="stat-row"><span>TURNS</span> <span id="stat-turns" class="stat-value">0</span></div>
+            </div>
+
+            <div class="gui-panel" style="flex:1; overflow-y:auto;">
+                <div class="gui-header">Inventory</div>
+                <ul id="inventory-list" style="list-style:none; padding:0; font-size:0.7em; color:var(--term-yellow);"></ul>
+            </div>
+        </aside>
+
+        <main id="terminal-wrapper" class="ff-window">
+            <div id="game-container" class="lore-terminal"></div>
+        </main>
+    </div>
+
+    <script src="node_modules/lorejs/lore.js"></script>
+    <script>
+        const PLANETS = [
+            { name: "Saturn", symbol: "♄", color: "#aaa" },
+            { name: "Jupiter", symbol: "♃", color: "#f90" },
+            { name: "Mars", symbol: "♂", color: "#f33" },
+            { name: "Sun", symbol: "☉", color: "#ff0" },
+            { name: "Venus", symbol: "♀", color: "#f9f" },
+            { name: "Mercury", symbol: "☿", color: "#3ff" },
+            { name: "Moon", symbol: "☽", color: "#fff" }
+        ];
+
+        // Chaldean Order for hours (Saturday starts with Saturn)
+        const CHALDEAN_ORDER = [0, 1, 2, 3, 4, 5, 6]; // Indices into PLANETS
+
+        // Day Order (Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday)
+        // Saturday=Saturn, Sunday=Sun, Monday=Moon, Tuesday=Mars, Wednesday=Mercury, Thursday=Jupiter, Friday=Venus
+        const DAY_ORDER = [0, 3, 6, 2, 5, 1, 4];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const container = document.getElementById('heptagram-container');
+            const nodes = [];
+
+            // Position planets in heptagram
+            PLANETS.forEach((p, i) => {
+                const node = document.createElement('div');
+                node.className = 'planet-node';
+                node.innerHTML = p.symbol;
+                node.title = p.name;
+                const angle = (i * (360 / 7) - 90) * (Math.PI / 180);
+                const r = 70;
+                node.style.left = (90 + r * Math.cos(angle) - 17) + 'px';
+                node.style.top = (90 + r * Math.sin(angle) - 17) + 'px';
+                container.appendChild(node);
+                nodes.push(node);
+            });
+
+            const game = new LORE.Game({
+                prompt: "{{magenta}}❯{{color_reset}} ",
+                typingSpeed: 20
+            });
+
+            const updateGUI = () => {
+                const s = game.state;
+                const f = s.flags || {};
+                const turns = f.gameTime || 0;
+                
+                // 1 turn = 15 mins. 4 turns = 1 hour. 96 turns = 1 day.
+                const totalHours = Math.floor(turns / 4);
+                const dayNum = Math.floor(totalHours / 24) + 1;
+                const hourOfDay = totalHours % 24;
+                
+                // Day of week (0=Sat, 1=Sun...)
+                const dayIdx = (dayNum - 1) % 7;
+                const dayPlanetIdx = DAY_ORDER[dayIdx];
+                
+                // Hour Planet (Chaldean sequence continues forever)
+                const hourPlanetIdx = totalHours % 7;
+
+                document.getElementById('stat-day-num').querySelector('.stat-value').textContent = dayNum;
+                document.getElementById('stat-day-sym').textContent = PLANETS[dayPlanetIdx].symbol;
+                document.getElementById('stat-hour-sym').textContent = PLANETS[hourPlanetIdx].symbol;
+
+                nodes.forEach((node, i) => {
+                    node.classList.remove('active-day', 'active-hour');
+                    if (i === dayPlanetIdx) node.classList.add('active-day');
+                    if (i === hourPlanetIdx) node.classList.add('active-hour');
+                });
+
+                document.getElementById('stat-sanity').textContent = f.sanity ?? 100;
+                document.getElementById('stat-wrath').textContent = f.wrath ?? 0;
+                document.getElementById('stat-loyalty').textContent = f.loyalty ?? 0;
+                
+                document.getElementById('stat-rank').textContent = f.cultRank ?? "Novice";
+                document.getElementById('stat-turns').textContent = turns;
+
+                const invList = document.getElementById('inventory-list');
+                invList.innerHTML = s.inventory.length ? s.inventory.map(i => `<li>> ${i.replace(/_/g, ' ').toUpperCase()}</li>`).join('') : '<li>(EMPTY)</li>';
+            };
+
+            const originalProcessInput = game.processInput;
+            game.processInput = function(input) {
+                originalProcessInput.call(this, input);
+                setTimeout(updateGUI, 100);
+            };
+
+            try {
+                await game.loadNovel('./lemegeton.js');
+                updateGUI();
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    </script>
+</body>
+</html>
