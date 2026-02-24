@@ -339,9 +339,10 @@
                         <div class="menu-label">Players (1/4)</div>
                         <ul id="multi-player-list" style="font-size:0.7em; margin-bottom:15px;">
                             <li>Desdemona (NPC)</li>
-                            <li style="color:var(--term-green);">You (Cultist 1)</li>
+                            <li id="li-me-player" style="color:var(--term-green);">You (Cultist 1)</li>
                         </ul>
                         <button class="menu-btn" id="btn-stop-multi">Stop Hosting</button>
+                        <button class="menu-btn" id="btn-leave-multi" style="display:none;">Leave Session</button>
                     </div>
                 </div>
             </div>
@@ -541,26 +542,103 @@
             const multiInit = document.getElementById('multi-init');
             const multiHosting = document.getElementById('multi-hosting');
             const serverCodeDisplay = document.getElementById('display-server-code');
+            const btnStopMulti = document.getElementById('btn-stop-multi');
+            const btnLeaveMulti = document.getElementById('btn-leave-multi');
 
             window.setupMultiplayer = (isHost) => {
                 game.state.flags.isMultiplayer = true;
                 
-                // Add Desdemona as NPC to current room if not already there
+                // Toggle UI buttons
+                if (isHost) {
+                    btnStopMulti.style.display = 'block';
+                    btnLeaveMulti.style.display = 'none';
+                    game.state.flags.playerName = game.state.flags.playerName || "Adept Elara";
+                    game.printLine(`{{cyan}}System: You are hosting the session as ${game.state.flags.playerName}.{{color_reset}}`);
+                } else {
+                    btnStopMulti.style.display = 'none';
+                    btnLeaveMulti.style.display = 'block';
+                    game.state.flags.playerName = game.state.flags.playerName || "Adept Kael";
+                    game.printLine(`{{yellow}}System: You joined the session as ${game.state.flags.playerName}.{{color_reset}}`);
+                }
+
+                // Add Desdemona as NPC to current room
                 const currentRoom = game.world.rooms.get(game.state.currentRoom);
                 if (!currentRoom.characters) currentRoom.characters = [];
                 if (!currentRoom.characters.includes('desdemona')) {
                     currentRoom.characters.push('desdemona');
                 }
 
-                if (isHost) {
-                    game.state.flags.playerName = "Adept Elara";
-                    game.printLine('{{cyan}}You are now playing as Adept Elara.{{color_reset}}');
-                } else {
-                    game.state.flags.playerName = "Adept Kael";
-                    game.printLine('{{yellow}}You are now playing as Adept Kael.{{color_reset}}');
-                }
-                
-                game.describeRoom();
+                // Register Emote Command
+                game.registerCommand('emote', {
+                    description: 'Perform an action (e.g., emote waves)',
+                    execute: (args) => {
+                        if (args.length === 0) return false;
+                        const action = args.join(' ');
+                        game.printLine(`{{magenta}}* ${game.state.flags.playerName} ${action}{{color_reset}}`);
+                        return true;
+                    }
+                });
+                game.registerAlias('me', 'emote');
+
+                // Register Custom Say Command
+                game.registerCommand('say', {
+                    description: 'Speak to others: say <any-text> "<say-text>"',
+                    execute: (args) => {
+                        const input = args.join(' ');
+                        const match = input.match(/^(.*?)\s*"(.*)"$/);
+                        
+                        if (match) {
+                            const anyText = match[1].trim();
+                            const sayText = match[2].trim();
+                            const prefix = anyText ? `(${anyText})` : '';
+                            game.printLine(`{{green}}${game.state.flags.playerName}${prefix}: "${sayText}"{{color_reset}}`);
+                        } else if (args.length > 0) {
+                            // Fallback to normal say if no quotes
+                            game.printLine(`{{green}}${game.state.flags.playerName}: "${input}"{{color_reset}}`);
+                        } else {
+                            game.printLine('{{red}}Usage: say <any-text> "<say-text>" or say "<text>"{{color_reset}}');
+                        }
+                        return true;
+                    }
+                });
+
+                // Override moveToRoom for movement notifications
+                const originalMoveToRoom = game.moveToRoom;
+                game.moveToRoom = function(roomId) {
+                    const oldRoomId = this.state.currentRoom;
+                    const oldRoom = this.world.rooms.get(oldRoomId);
+                    
+                    // Call original
+                    originalMoveToRoom.call(this, roomId);
+                    
+                    // If room changed successfully
+                    if (this.state.currentRoom === roomId && oldRoomId !== roomId) {
+                        const newRoom = this.world.rooms.get(roomId);
+                        let direction = "away";
+                        
+                        // Try to find the direction used
+                        if (oldRoom && oldRoom.exits) {
+                            for (const dir in oldRoom.exits) {
+                                if (oldRoom.exits[dir] === roomId) {
+                                    direction = dir;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        game.printLine(`{{gray}}[MUD] ${this.state.flags.playerName} moves ${direction} to ${newRoom.name}{{color_reset}}`);
+                        
+                        // Simulated other players moving (MUD feel)
+                        if (Math.random() > 0.7) {
+                            const names = ["Adept Thorne", "Adept Lyra", "Cultist 3"];
+                            const randomName = names[Math.floor(Math.random() * names.length)];
+                            setTimeout(() => {
+                                game.printLine(`{{gray}}[MUD] ${randomName} has entered the room.{{color_reset}}`);
+                            }, 1000);
+                        }
+                    }
+                };
+
                 updateGUI();
             };
 
@@ -570,7 +648,6 @@
                 multiInit.style.display = 'none';
                 multiHosting.style.display = 'block';
                 game.printLine(`{{magenta}}Multiplayer session started! Code: ${code}{{color_reset}}`);
-                game.printLine(`{{yellow}}Waiting for other cultists to join...{{color_reset}}`);
                 
                 window.setupMultiplayer(true);
             };
@@ -582,17 +659,23 @@
                     multiInit.style.display = 'none';
                     multiHosting.style.display = 'block';
                     serverCodeDisplay.textContent = code.toUpperCase();
-                    game.printLine(`{{green}}Connected!{{color_reset}}`);
                     
                     window.setupMultiplayer(false);
                 }
             };
 
-            document.getElementById('btn-stop-multi').onclick = () => {
+            btnStopMulti.onclick = () => {
                 multiInit.style.display = 'block';
                 multiHosting.style.display = 'none';
-                game.printLine('{{red}}Multiplayer session ended.{{color_reset}}');
-                location.reload(); // Simplest way to reset to single player
+                game.printLine('{{red}}Host stopped the session.{{color_reset}}');
+                setTimeout(() => location.reload(), 1500);
+            };
+
+            btnLeaveMulti.onclick = () => {
+                multiInit.style.display = 'block';
+                multiHosting.style.display = 'none';
+                game.printLine('{{yellow}}You have left the session.{{color_reset}}');
+                setTimeout(() => location.reload(), 1500);
             };
 
             try {
