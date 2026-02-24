@@ -549,6 +549,17 @@
             let peer = null;
             let connections = []; // For Host: list of all connected clients
 
+            const PEER_CONFIG = {
+                config: {
+                    'iceServers': [
+                        { url: 'stun:stun.l.google.com:19302' },
+                        { url: 'stun:stun1.l.google.com:19302' },
+                        { url: 'stun:stun2.l.google.com:19302' },
+                    ]
+                },
+                debug: 1 // Only errors and warnings
+            };
+
             window.broadcastMsg = (type, data) => {
                 const msg = {
                     from: game.state.flags.playerName,
@@ -558,10 +569,8 @@
                 };
                 
                 if (game.state.flags.isHost) {
-                    // Host sends to all clients
-                    connections.forEach(conn => conn.send(msg));
-                } else if (peer && connections[0]) {
-                    // Client sends to host only
+                    connections.forEach(conn => { if (conn.open) conn.send(msg); });
+                } else if (peer && connections[0] && connections[0].open) {
                     connections[0].send(msg);
                 }
             };
@@ -587,10 +596,9 @@
                         break;
                 }
 
-                // If Host, relay message to other clients
                 if (game.state.flags.isHost) {
                     connections.forEach(conn => {
-                        if (conn.peer !== msg.peerId) conn.send(msg);
+                        if (conn.peer !== msg.peerId && conn.open) conn.send(msg);
                     });
                 }
             };
@@ -606,15 +614,16 @@
                     btnStopMulti.style.display = 'block';
                     btnLeaveMulti.style.display = 'none';
                     game.state.flags.playerName = game.state.flags.playerName || "Adept Elara";
-                    game.printLine(`{{cyan}}System: Session [${code}] started. You are the Host (${game.state.flags.playerName}).{{color_reset}}`);
+                    game.printLine(`{{cyan}}System: Global Session [${code}] started. Hosting as ${game.state.flags.playerName}.{{color_reset}}`);
                 } else {
                     btnStopMulti.style.display = 'none';
                     btnLeaveMulti.style.display = 'block';
                     game.state.flags.playerName = game.state.flags.playerName || "Adept Kael";
-                    game.printLine(`{{yellow}}System: Connected to [${code}]. You are a Participant (${game.state.flags.playerName}).{{color_reset}}`);
+                    game.printLine(`{{yellow}}System: Connected Globally to [${code}] as ${game.state.flags.playerName}.{{color_reset}}`);
+                    window.broadcastMsg('join', { name: game.state.flags.playerName });
                 }
 
-                // Register Emote Command
+                // ... [commands and movement remain identical] ...
                 game.registerCommand('emote', {
                     description: 'Perform an action',
                     execute: (args) => {
@@ -627,7 +636,6 @@
                 });
                 game.registerAlias('me', 'emote');
 
-                // Register Say Command
                 game.registerCommand('say', {
                     description: 'Speak: say <any-text> "<say-text>"',
                     execute: (args) => {
@@ -645,7 +653,6 @@
                     }
                 });
 
-                // Override Movement
                 const originalMoveToRoom = game.moveToRoom;
                 game.moveToRoom = function(roomId) {
                     const oldRoomId = this.state.currentRoom;
@@ -661,7 +668,6 @@
                     }
                 };
 
-                // Add Desdemona NPC
                 const currentRoom = game.world.rooms.get(game.state.currentRoom);
                 if (currentRoom && (!currentRoom.characters || !currentRoom.characters.includes('desdemona'))) {
                     currentRoom.characters = currentRoom.characters || [];
@@ -673,8 +679,10 @@
             };
 
             document.getElementById('btn-multi-host').onclick = () => {
-                const code = "LJS-" + Math.random().toString(36).substring(2, 6).toUpperCase();
-                peer = new Peer(code);
+                const code = "LORE-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+                game.printLine(`{{gray}}Starting peer server connection...{{color_reset}}`);
+                
+                peer = new Peer(code, PEER_CONFIG);
                 
                 peer.on('open', (id) => {
                     serverCodeDisplay.textContent = id;
@@ -695,20 +703,22 @@
                 });
 
                 peer.on('error', (err) => {
-                    alert('Peer error: ' + err.type);
-                    if (err.type === 'unavailable-id') alert('ID already taken. Try again.');
+                    game.printLine(`{{red}}Multiplayer Error: ${err.type}{{color_reset}}`);
+                    if (err.type === 'unavailable-id') alert('Server code collision. Please try again.');
                 });
             };
 
             document.getElementById('btn-multi-join').onclick = () => {
-                const rawCode = prompt('Enter Server Code (e.g., LJS-ABCD):');
+                const rawCode = prompt('Enter Server Code (e.g., LORE-XXXXXX):');
                 if (!rawCode) return;
                 
                 const code = rawCode.trim().toUpperCase();
-                peer = new Peer(); // Auto-id for client
+                game.printLine(`{{gray}}Searching for realm [${code}]...{{color_reset}}`);
+                
+                peer = new Peer(PEER_CONFIG); // Auto-id for client
                 
                 peer.on('open', () => {
-                    const conn = peer.connect(code);
+                    const conn = peer.connect(code, { reliable: true });
                     conn.on('open', () => {
                         connections = [conn];
                         serverCodeDisplay.textContent = code;
@@ -723,13 +733,13 @@
                         alert('Connection error: ' + err);
                     });
                     conn.on('close', () => {
-                        alert('Disconnected from host.');
+                        alert('Disconnected from realm host.');
                         location.reload();
                     });
                 });
 
                 peer.on('error', (err) => {
-                    alert('Join error: ' + err.type);
+                    game.printLine(`{{red}}Connection failed: ${err.type}{{color_reset}}`);
                 });
             };
 
