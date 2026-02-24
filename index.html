@@ -563,43 +563,47 @@
                 game.state.flags.isMultiplayer = true;
                 game.state.flags.currentMultiCode = code;
                 
+                game.clearScreen();
+                
                 // Toggle UI buttons
                 if (isHost) {
                     btnStopMulti.style.display = 'block';
                     btnLeaveMulti.style.display = 'none';
                     game.state.flags.playerName = game.state.flags.playerName || "Adept Elara";
-                    game.printLine(`{{cyan}}System: You are hosting session [${code}] as ${game.state.flags.playerName}.{{color_reset}}`);
+                    game.printLine(`{{cyan}}System: Session [${code}] started. You are the Host (${game.state.flags.playerName}).{{color_reset}}`);
                 } else {
                     btnStopMulti.style.display = 'none';
                     btnLeaveMulti.style.display = 'block';
                     game.state.flags.playerName = game.state.flags.playerName || "Adept Kael";
-                    game.printLine(`{{yellow}}System: You joined session [${code}] as ${game.state.flags.playerName}.{{color_reset}}`);
+                    game.printLine(`{{yellow}}System: Joined session [${code}]. You are a Participant (${game.state.flags.playerName}).{{color_reset}}`);
                     window.broadcastMsg('join', { name: game.state.flags.playerName });
                 }
 
                 // Listen for messages
                 window.addEventListener('storage', (e) => {
                     if (e.key === MULTI_MSG_KEY && e.newValue) {
-                        const msg = JSON.parse(e.newValue);
-                        if (msg.code !== game.state.flags.currentMultiCode || msg.from === game.state.flags.playerName) return;
+                        try {
+                            const msg = JSON.parse(e.newValue);
+                            if (msg.code !== game.state.flags.currentMultiCode || msg.from === game.state.flags.playerName) return;
 
-                        switch(msg.type) {
-                            case 'say':
-                                game.printLine(`{{green}}${msg.from}${msg.data.prefix}: "${msg.data.text}"{{color_reset}}`);
-                                break;
-                            case 'emote':
-                                game.printLine(`{{magenta}}* ${msg.from} ${msg.data.action}{{color_reset}}`);
-                                break;
-                            case 'move':
-                                game.printLine(`{{gray}}[MUD] ${msg.from} moves ${msg.data.dir} to ${msg.data.roomName}{{color_reset}}`);
-                                break;
-                            case 'join':
-                                game.printLine(`{{cyan}}[MUD] ${msg.data.name} has entered the realm.{{color_reset}}`);
-                                break;
-                            case 'leave':
-                                game.printLine(`{{red}}[MUD] ${msg.data.name} has left the realm.{{color_reset}}`);
-                                break;
-                        }
+                            switch(msg.type) {
+                                case 'say':
+                                    game.printLine(`{{green}}${msg.from}${msg.data.prefix}: "${msg.data.text}"{{color_reset}}`);
+                                    break;
+                                case 'emote':
+                                    game.printLine(`{{magenta}}* ${msg.from} ${msg.data.action}{{color_reset}}`);
+                                    break;
+                                case 'move':
+                                    game.printLine(`{{gray}}[MUD] ${msg.from} moves ${msg.data.dir} to ${msg.data.roomName}{{color_reset}}`);
+                                    break;
+                                case 'join':
+                                    game.printLine(`{{cyan}}[MUD] ${msg.data.name} has entered the realm.{{color_reset}}`);
+                                    break;
+                                case 'leave':
+                                    game.printLine(`{{red}}[MUD] ${msg.data.name} has left the realm.{{color_reset}}`);
+                                    break;
+                            }
+                        } catch (err) { console.error("MUD Msg Error:", err); }
                     }
                 });
 
@@ -654,33 +658,45 @@
                     }
                 };
 
+                game.describeRoom();
                 updateGUI();
             };
 
             document.getElementById('btn-multi-host').onclick = () => {
-                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-                const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
-                rooms[code] = { active: true, created: Date.now() };
-                localStorage.setItem(MULTI_ROOMS_KEY, JSON.stringify(rooms));
+                try {
+                    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
+                    rooms[code] = { active: true, ts: Date.now() };
+                    localStorage.setItem(MULTI_ROOMS_KEY, JSON.stringify(rooms));
 
-                serverCodeDisplay.textContent = code;
-                multiInit.style.display = 'none';
-                multiHosting.style.display = 'block';
-                window.setupMultiplayer(true, code);
-            };
-
-            document.getElementById('btn-multi-join').onclick = () => {
-                const code = prompt('Enter Server Code:').toUpperCase();
-                const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
-                
-                if (rooms[code] && rooms[code].active) {
                     serverCodeDisplay.textContent = code;
                     multiInit.style.display = 'none';
                     multiHosting.style.display = 'block';
-                    window.setupMultiplayer(false, code);
-                } else {
-                    alert('Invalid or expired server code!');
-                    game.printLine('{{red}}Error: Invalid server code.{{color_reset}}');
+                    window.setupMultiplayer(true, code);
+                } catch (e) {
+                    alert('localStorage access denied! Please run via a web server (e.g., Live Server) or enable cookies.');
+                    console.error(e);
+                }
+            };
+
+            document.getElementById('btn-multi-join').onclick = () => {
+                const rawCode = prompt('Enter Server Code:');
+                if (!rawCode) return;
+                
+                const code = rawCode.trim().toUpperCase();
+                try {
+                    const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
+                    if (rooms[code] && rooms[code].active) {
+                        serverCodeDisplay.textContent = code;
+                        multiInit.style.display = 'none';
+                        multiHosting.style.display = 'block';
+                        window.setupMultiplayer(false, code);
+                    } else {
+                        alert('Invalid or expired server code!');
+                        game.printLine('{{red}}Error: Invalid server code.{{color_reset}}');
+                    }
+                } catch (e) {
+                    alert('localStorage access error. Are you in Private/Incognito mode or using file://?');
                 }
             };
 
