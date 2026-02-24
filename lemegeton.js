@@ -19,6 +19,8 @@ module.exports = {
       items: ["ritual_knife"],
       onEnter: (state, engine) => {
         if (!state.flags.initialized) {
+          state.flags.playerName = "Desdemona";
+          state.flags.isMultiplayer = false;
           state.flags.sanity = 100;
           state.flags.wrath = 0;
           state.flags.loyalty = 0;
@@ -317,6 +319,50 @@ module.exports = {
       description: "An old man riding a crocodile, carrying a goshawk on his fist.",
       talk: (state, engine) => {
         engine.printLine("{{red}}Agares: 'I can teach you languages and cause the still to run. What is it you seek?'{{color_reset}}");
+      }
+    },
+    {
+      id: "desdemona",
+      name: "{{bold}}{{magenta}}Desdemona{{font_reset}}",
+      description: "A tragic member of Solomonis's cult. She looks lost in thought, her eyes filled with a mix of fear and strange resolve.",
+      talk: (state, engine) => {
+        if (state.flags.playerName === "Desdemona") {
+          engine.printLine("You look at your reflection in a puddle. You see Desdemona.");
+        } else {
+          engine.printLine("{{magenta}}Desdemona: 'I... I shouldn't be here. The whispers... they're getting louder.'{{color_reset}}");
+        }
+      }
+    },
+    {
+      id: "cultist_elara",
+      name: "{{bold}}{{cyan}}Adept Elara{{font_reset}}",
+      description: "A cultist with keen eyes and a robe embroidered with silver sigils.",
+      talk: (state, engine) => {
+        engine.printLine("{{cyan}}Elara: 'The stars are aligned for our ascension. Do not falter.'{{color_reset}}");
+      }
+    },
+    {
+      id: "cultist_kael",
+      name: "{{bold}}{{yellow}}Adept Kael{{font_reset}}",
+      description: "A tall, stern cultist carrying a heavy brass vessel.",
+      talk: (state, engine) => {
+        engine.printLine("{{yellow}}Kael: 'Power is earned through sacrifice. Remember that.'{{color_reset}}");
+      }
+    },
+    {
+      id: "cultist_thorne",
+      name: "{{bold}}{{red}}Adept Thorne{{font_reset}}",
+      description: "A scarred cultist who seems more interested in the ritual knife than the grimoires.",
+      talk: (state, engine) => {
+        engine.printLine("{{red}}Thorne: 'The demons only understand strength. Show them yours.'{{color_reset}}");
+      }
+    },
+    {
+      id: "cultist_lyra",
+      name: "{{bold}}{{green}}Adept Lyra{{font_reset}}",
+      description: "A quiet cultist who constantly whispers incantations under her breath.",
+      talk: (state, engine) => {
+        engine.printLine("{{green}}Lyra: 'Can you hear them? The voices from the Rift... they are calling.'{{color_reset}}");
       }
     }
   ],

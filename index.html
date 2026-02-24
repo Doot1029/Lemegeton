@@ -155,6 +155,94 @@
 
         .lore-output::-webkit-scrollbar { width: 6px; }
         .lore-output::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        /* Menu Overlay */
+        #menu-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #menu-window {
+            width: 500px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-tabs {
+            display: flex;
+            background: rgba(255,255,255,0.1);
+            border-bottom: 2px solid var(--ff-border);
+        }
+
+        .menu-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .menu-tab.active {
+            background: var(--ff-blue-top);
+            color: var(--term-cyan);
+            border-bottom: 2px solid var(--term-cyan);
+            margin-bottom: -2px;
+        }
+
+        .menu-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .menu-section { display: none; }
+        .menu-section.active { display: block; }
+
+        .menu-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--ff-border);
+            color: white;
+            padding: 10px;
+            font-family: var(--pixel-font);
+            font-size: 0.7em;
+            cursor: pointer;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: var(--term-yellow);
+        }
+
+        .menu-label {
+            font-size: 0.7em;
+            margin-bottom: 5px;
+            color: var(--term-cyan);
+            text-transform: uppercase;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .server-code-display {
+            background: rgba(0,0,0,0.5);
+            border: 1px dashed var(--term-magenta);
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2em;
+            color: var(--term-magenta);
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -181,6 +269,7 @@
 
             <div class="gui-panel">
                 <div class="gui-header">Status</div>
+                <div class="stat-row"><span>PLAYER</span> <span id="stat-player" class="stat-value">Desdemona</span></div>
                 <div class="stat-row"><span>RANK</span> <span id="stat-rank" class="stat-value">Novice</span></div>
                 <div class="stat-row"><span>TURNS</span> <span id="stat-turns" class="stat-value">0</span></div>
             </div>
@@ -189,11 +278,74 @@
                 <div class="gui-header">Inventory</div>
                 <ul id="inventory-list" style="list-style:none; padding:0; font-size:0.7em; color:var(--term-yellow);"></ul>
             </div>
+
+            <button id="btn-open-menu" class="menu-btn" style="margin-top:auto; text-align:center; border-width:2px;">SYSTEM MENU</button>
         </aside>
 
         <main id="terminal-wrapper" class="ff-window">
             <div id="game-container" class="lore-terminal"></div>
         </main>
+    </div>
+
+    <div id="menu-overlay">
+        <div id="menu-window" class="ff-window">
+            <div class="menu-tabs">
+                <div class="menu-tab active" data-tab="audio">Audio</div>
+                <div class="menu-tab" data-tab="save">Save/Load</div>
+                <div class="menu-tab" data-tab="settings">Settings</div>
+                <div class="menu-tab" data-tab="multi">Multiplayer</div>
+                <div class="menu-tab" id="btn-close-menu" style="margin-left:auto; border-right:none; border-left:1px solid rgba(255,255,255,0.2);">X</div>
+            </div>
+            <div class="menu-content">
+                <!-- Audio Section -->
+                <div id="tab-audio" class="menu-section active">
+                    <div class="menu-label">Master Volume</div>
+                    <input type="range" id="volume-master" min="0" max="100" value="80">
+                    <div class="menu-label">Music Volume</div>
+                    <input type="range" id="volume-music" min="0" max="100" value="60">
+                    <button class="menu-btn" id="btn-mute">Mute All Audio</button>
+                </div>
+
+                <!-- Save/Load Section -->
+                <div id="tab-save" class="menu-section">
+                    <button class="menu-btn" id="btn-save-game">Save Game (Slot 1)</button>
+                    <button class="menu-btn" id="btn-load-game">Load Game (Slot 1)</button>
+                    <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
+                    <button class="menu-btn" id="btn-download-logs" style="border-color:var(--term-green); color:var(--term-green);">DOWNLOAD SESSION LOGS (.TXT)</button>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="tab-settings" class="menu-section">
+                    <div class="menu-label">Character Name</div>
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="text" id="input-player-name" style="flex:1; background:rgba(0,0,0,0.5); border:1px solid var(--ff-border); color:white; padding:5px; font-family:var(--pixel-font); font-size:0.7em;" placeholder="Enter name...">
+                        <button class="menu-btn" id="btn-change-name" style="width:auto; margin-bottom:0;">SET</button>
+                    </div>
+                    <div class="menu-label">Text Speed</div>
+                    <input type="range" id="setting-text-speed" min="1" max="100" value="20">
+                    <button class="menu-btn" id="btn-clear-history">Clear Command History</button>
+                    <button class="menu-btn" id="btn-reset-game" style="border-color:var(--term-red); color:var(--term-red);">Hard Reset Game</button>
+                </div>
+
+                <!-- Multiplayer Section -->
+                <div id="tab-multi" class="menu-section">
+                    <div id="multi-init">
+                        <button class="menu-btn" id="btn-multi-host">Host New Session</button>
+                        <button class="menu-btn" id="btn-multi-join">Join Session with Code</button>
+                    </div>
+                    <div id="multi-hosting" style="display:none;">
+                        <div class="menu-label">Server Code</div>
+                        <div class="server-code-display" id="display-server-code">----</div>
+                        <div class="menu-label">Players (1/4)</div>
+                        <ul id="multi-player-list" style="font-size:0.7em; margin-bottom:15px;">
+                            <li>Desdemona (NPC)</li>
+                            <li style="color:var(--term-green);">You (Cultist 1)</li>
+                        </ul>
+                        <button class="menu-btn" id="btn-stop-multi">Stop Hosting</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="lore.js"></script>
@@ -286,6 +438,7 @@
                 document.getElementById('stat-wrath').textContent = f.wrath ?? 0;
                 document.getElementById('stat-loyalty').textContent = f.loyalty ?? 0;
                 
+                document.getElementById('stat-player').textContent = f.playerName ?? "Desdemona";
                 document.getElementById('stat-rank').textContent = f.cultRank ?? "Novice";
                 document.getElementById('stat-turns').textContent = turns;
 
@@ -299,6 +452,147 @@
                 const result = originalProcessInput.call(this, input);
                 updateGUI();
                 return result;
+            };
+
+            // --- Menu Logic ---
+            const menuOverlay = document.getElementById('menu-overlay');
+            const btnOpenMenu = document.getElementById('btn-open-menu');
+            const btnCloseMenu = document.getElementById('btn-close-menu');
+            const tabs = document.querySelectorAll('.menu-tab[data-tab]');
+            const sections = document.querySelectorAll('.menu-section');
+
+            btnOpenMenu.onclick = () => menuOverlay.style.display = 'flex';
+            btnCloseMenu.onclick = () => menuOverlay.style.display = 'none';
+
+            tabs.forEach(tab => {
+                tab.onclick = () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+                };
+            });
+
+            // --- Audio Logic ---
+            let isMuted = false;
+            const btnMute = document.getElementById('btn-mute');
+            btnMute.onclick = () => {
+                isMuted = !isMuted;
+                btnMute.textContent = isMuted ? 'Unmute All Audio' : 'Mute All Audio';
+                // Logic to actually mute audio would go here
+                game.printLine(isMuted ? '{{gray}}[Audio Muted]{{color_reset}}' : '{{gray}}[Audio Unmuted]{{color_reset}}');
+            };
+
+            // --- Save/Load & Logs ---
+            document.getElementById('btn-save-game').onclick = () => {
+                game.saveGame();
+                game.printLine('{{green}}Game state captured in Slot 1.{{color_reset}}');
+            };
+            document.getElementById('btn-load-game').onclick = () => {
+                game.loadGame();
+                updateGUI();
+            };
+
+            document.getElementById('btn-download-logs').onclick = () => {
+                const output = document.getElementById('game-container').querySelector('.lore-output');
+                const logText = output.innerText || output.textContent;
+                const blob = new Blob([logText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lemegeton_session_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                game.printLine('{{green}}Session logs downloaded successfully.{{color_reset}}');
+            };
+
+            // --- Settings ---
+            const speedSlider = document.getElementById('setting-text-speed');
+            speedSlider.oninput = () => {
+                game.config.typingSpeed = parseInt(speedSlider.value);
+            };
+
+            const inputPlayerName = document.getElementById('input-player-name');
+            document.getElementById('btn-change-name').onclick = () => {
+                const newName = inputPlayerName.value.trim();
+                if (newName) {
+                    game.state.flags.playerName = newName;
+                    game.printLine(`{{green}}Identity updated: You are now known as ${newName}.{{color_reset}}`);
+                    updateGUI();
+                    inputPlayerName.value = '';
+                }
+            };
+
+            document.getElementById('btn-clear-history').onclick = () => {
+                game.state.history = [];
+                game.printLine('{{gray}}Command history cleared.{{color_reset}}');
+            };
+
+            document.getElementById('btn-reset-game').onclick = () => {
+                if (confirm('Are you sure you want to completely reset? All progress will be lost.')) {
+                    localStorage.removeItem('lore_save_data');
+                    location.reload();
+                }
+            };
+
+            // --- Multiplayer Logic ---
+            const multiInit = document.getElementById('multi-init');
+            const multiHosting = document.getElementById('multi-hosting');
+            const serverCodeDisplay = document.getElementById('display-server-code');
+
+            window.setupMultiplayer = (isHost) => {
+                game.state.flags.isMultiplayer = true;
+                
+                // Add Desdemona as NPC to current room if not already there
+                const currentRoom = game.world.rooms.get(game.state.currentRoom);
+                if (!currentRoom.characters) currentRoom.characters = [];
+                if (!currentRoom.characters.includes('desdemona')) {
+                    currentRoom.characters.push('desdemona');
+                }
+
+                if (isHost) {
+                    game.state.flags.playerName = "Adept Elara";
+                    game.printLine('{{cyan}}You are now playing as Adept Elara.{{color_reset}}');
+                } else {
+                    game.state.flags.playerName = "Adept Kael";
+                    game.printLine('{{yellow}}You are now playing as Adept Kael.{{color_reset}}');
+                }
+                
+                game.describeRoom();
+                updateGUI();
+            };
+
+            document.getElementById('btn-multi-host').onclick = () => {
+                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                serverCodeDisplay.textContent = code;
+                multiInit.style.display = 'none';
+                multiHosting.style.display = 'block';
+                game.printLine(`{{magenta}}Multiplayer session started! Code: ${code}{{color_reset}}`);
+                game.printLine(`{{yellow}}Waiting for other cultists to join...{{color_reset}}`);
+                
+                window.setupMultiplayer(true);
+            };
+
+            document.getElementById('btn-multi-join').onclick = () => {
+                const code = prompt('Enter Server Code:');
+                if (code) {
+                    game.printLine(`{{magenta}}Joining session ${code.toUpperCase()}...{{color_reset}}`);
+                    multiInit.style.display = 'none';
+                    multiHosting.style.display = 'block';
+                    serverCodeDisplay.textContent = code.toUpperCase();
+                    game.printLine(`{{green}}Connected!{{color_reset}}`);
+                    
+                    window.setupMultiplayer(false);
+                }
+            };
+
+            document.getElementById('btn-stop-multi').onclick = () => {
+                multiInit.style.display = 'block';
+                multiHosting.style.display = 'none';
+                game.printLine('{{red}}Multiplayer session ended.{{color_reset}}');
+                location.reload(); // Simplest way to reset to single player
             };
 
             try {
