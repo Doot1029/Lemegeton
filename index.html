@@ -538,104 +538,119 @@
                 }
             };
 
-            // --- Multiplayer Logic ---
+            // --- Multiplayer Logic (localStorage MUD) ---
             const multiInit = document.getElementById('multi-init');
             const multiHosting = document.getElementById('multi-hosting');
             const serverCodeDisplay = document.getElementById('display-server-code');
             const btnStopMulti = document.getElementById('btn-stop-multi');
             const btnLeaveMulti = document.getElementById('btn-leave-multi');
 
-            window.setupMultiplayer = (isHost) => {
+            const MULTI_ROOMS_KEY = 'lore_mud_rooms';
+            const MULTI_MSG_KEY = 'lore_mud_msg';
+
+            window.broadcastMsg = (type, data) => {
+                const msg = {
+                    code: game.state.flags.currentMultiCode,
+                    from: game.state.flags.playerName,
+                    type,
+                    data,
+                    ts: Date.now()
+                };
+                localStorage.setItem(MULTI_MSG_KEY, JSON.stringify(msg));
+            };
+
+            window.setupMultiplayer = (isHost, code) => {
                 game.state.flags.isMultiplayer = true;
+                game.state.flags.currentMultiCode = code;
                 
                 // Toggle UI buttons
                 if (isHost) {
                     btnStopMulti.style.display = 'block';
                     btnLeaveMulti.style.display = 'none';
                     game.state.flags.playerName = game.state.flags.playerName || "Adept Elara";
-                    game.printLine(`{{cyan}}System: You are hosting the session as ${game.state.flags.playerName}.{{color_reset}}`);
+                    game.printLine(`{{cyan}}System: You are hosting session [${code}] as ${game.state.flags.playerName}.{{color_reset}}`);
                 } else {
                     btnStopMulti.style.display = 'none';
                     btnLeaveMulti.style.display = 'block';
                     game.state.flags.playerName = game.state.flags.playerName || "Adept Kael";
-                    game.printLine(`{{yellow}}System: You joined the session as ${game.state.flags.playerName}.{{color_reset}}`);
+                    game.printLine(`{{yellow}}System: You joined session [${code}] as ${game.state.flags.playerName}.{{color_reset}}`);
+                    window.broadcastMsg('join', { name: game.state.flags.playerName });
                 }
 
-                // Add Desdemona as NPC to current room
+                // Listen for messages
+                window.addEventListener('storage', (e) => {
+                    if (e.key === MULTI_MSG_KEY && e.newValue) {
+                        const msg = JSON.parse(e.newValue);
+                        if (msg.code !== game.state.flags.currentMultiCode || msg.from === game.state.flags.playerName) return;
+
+                        switch(msg.type) {
+                            case 'say':
+                                game.printLine(`{{green}}${msg.from}${msg.data.prefix}: "${msg.data.text}"{{color_reset}}`);
+                                break;
+                            case 'emote':
+                                game.printLine(`{{magenta}}* ${msg.from} ${msg.data.action}{{color_reset}}`);
+                                break;
+                            case 'move':
+                                game.printLine(`{{gray}}[MUD] ${msg.from} moves ${msg.data.dir} to ${msg.data.roomName}{{color_reset}}`);
+                                break;
+                            case 'join':
+                                game.printLine(`{{cyan}}[MUD] ${msg.data.name} has entered the realm.{{color_reset}}`);
+                                break;
+                            case 'leave':
+                                game.printLine(`{{red}}[MUD] ${msg.data.name} has left the realm.{{color_reset}}`);
+                                break;
+                        }
+                    }
+                });
+
+                // Add Desdemona as NPC
                 const currentRoom = game.world.rooms.get(game.state.currentRoom);
                 if (!currentRoom.characters) currentRoom.characters = [];
                 if (!currentRoom.characters.includes('desdemona')) {
                     currentRoom.characters.push('desdemona');
                 }
 
-                // Register Emote Command
                 game.registerCommand('emote', {
-                    description: 'Perform an action (e.g., emote waves)',
+                    description: 'Perform an action',
                     execute: (args) => {
                         if (args.length === 0) return false;
                         const action = args.join(' ');
                         game.printLine(`{{magenta}}* ${game.state.flags.playerName} ${action}{{color_reset}}`);
+                        window.broadcastMsg('emote', { action });
                         return true;
                     }
                 });
                 game.registerAlias('me', 'emote');
 
-                // Register Custom Say Command
                 game.registerCommand('say', {
-                    description: 'Speak to others: say <any-text> "<say-text>"',
+                    description: 'Speak: say <any-text> "<say-text>"',
                     execute: (args) => {
                         const input = args.join(' ');
                         const match = input.match(/^(.*?)\s*"(.*)"$/);
-                        
                         if (match) {
-                            const anyText = match[1].trim();
-                            const sayText = match[2].trim();
-                            const prefix = anyText ? `(${anyText})` : '';
-                            game.printLine(`{{green}}${game.state.flags.playerName}${prefix}: "${sayText}"{{color_reset}}`);
-                        } else if (args.length > 0) {
-                            // Fallback to normal say if no quotes
-                            game.printLine(`{{green}}${game.state.flags.playerName}: "${input}"{{color_reset}}`);
+                            const prefix = match[1].trim() ? `(${match[1].trim()})` : '';
+                            const text = match[2].trim();
+                            game.printLine(`{{green}}${game.state.flags.playerName}${prefix}: "${text}"{{color_reset}}`);
+                            window.broadcastMsg('say', { prefix, text });
                         } else {
-                            game.printLine('{{red}}Usage: say <any-text> "<say-text>" or say "<text>"{{color_reset}}');
+                            game.printLine('{{red}}Usage: say <any-text> "<say-text>"{{color_reset}}');
                         }
                         return true;
                     }
                 });
 
-                // Override moveToRoom for movement notifications
                 const originalMoveToRoom = game.moveToRoom;
                 game.moveToRoom = function(roomId) {
                     const oldRoomId = this.state.currentRoom;
                     const oldRoom = this.world.rooms.get(oldRoomId);
-                    
-                    // Call original
                     originalMoveToRoom.call(this, roomId);
-                    
-                    // If room changed successfully
                     if (this.state.currentRoom === roomId && oldRoomId !== roomId) {
                         const newRoom = this.world.rooms.get(roomId);
-                        let direction = "away";
-                        
-                        // Try to find the direction used
+                        let dir = "away";
                         if (oldRoom && oldRoom.exits) {
-                            for (const dir in oldRoom.exits) {
-                                if (oldRoom.exits[dir] === roomId) {
-                                    direction = dir;
-                                    break;
-                                }
-                            }
+                            for (const d in oldRoom.exits) if (oldRoom.exits[d] === roomId) { dir = d; break; }
                         }
-                        
-                        game.printLine(`{{gray}}[MUD] ${this.state.flags.playerName} moves ${direction} to ${newRoom.name}{{color_reset}}`);
-                        
-                        // Simulated other players moving (MUD feel)
-                        if (Math.random() > 0.7) {
-                            const names = ["Adept Thorne", "Adept Lyra", "Cultist 3"];
-                            const randomName = names[Math.floor(Math.random() * names.length)];
-                            setTimeout(() => {
-                                game.printLine(`{{gray}}[MUD] ${randomName} has entered the room.{{color_reset}}`);
-                            }, 1000);
-                        }
+                        window.broadcastMsg('move', { dir, roomName: newRoom.name });
                     }
                 };
 
@@ -644,38 +659,42 @@
 
             document.getElementById('btn-multi-host').onclick = () => {
                 const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
+                rooms[code] = { active: true, created: Date.now() };
+                localStorage.setItem(MULTI_ROOMS_KEY, JSON.stringify(rooms));
+
                 serverCodeDisplay.textContent = code;
                 multiInit.style.display = 'none';
                 multiHosting.style.display = 'block';
-                game.printLine(`{{magenta}}Multiplayer session started! Code: ${code}{{color_reset}}`);
-                
-                window.setupMultiplayer(true);
+                window.setupMultiplayer(true, code);
             };
 
             document.getElementById('btn-multi-join').onclick = () => {
-                const code = prompt('Enter Server Code:');
-                if (code) {
-                    game.printLine(`{{magenta}}Joining session ${code.toUpperCase()}...{{color_reset}}`);
+                const code = prompt('Enter Server Code:').toUpperCase();
+                const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
+                
+                if (rooms[code] && rooms[code].active) {
+                    serverCodeDisplay.textContent = code;
                     multiInit.style.display = 'none';
                     multiHosting.style.display = 'block';
-                    serverCodeDisplay.textContent = code.toUpperCase();
-                    
-                    window.setupMultiplayer(false);
+                    window.setupMultiplayer(false, code);
+                } else {
+                    alert('Invalid or expired server code!');
+                    game.printLine('{{red}}Error: Invalid server code.{{color_reset}}');
                 }
             };
 
             btnStopMulti.onclick = () => {
-                multiInit.style.display = 'block';
-                multiHosting.style.display = 'none';
-                game.printLine('{{red}}Host stopped the session.{{color_reset}}');
-                setTimeout(() => location.reload(), 1500);
+                const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
+                delete rooms[game.state.flags.currentMultiCode];
+                localStorage.setItem(MULTI_ROOMS_KEY, JSON.stringify(rooms));
+                window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                location.reload();
             };
 
             btnLeaveMulti.onclick = () => {
-                multiInit.style.display = 'block';
-                multiHosting.style.display = 'none';
-                game.printLine('{{yellow}}You have left the session.{{color_reset}}');
-                setTimeout(() => location.reload(), 1500);
+                window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                location.reload();
             };
 
             try {
