@@ -236,8 +236,12 @@
             const game = new LORE.Game({
                 container: '#game-container',
                 prompt: "{{magenta}}❯{{color_reset}} ",
-                typingSpeed: 20
+                typingSpeed: 20,
+                clearScreenOnNovelLoad: false
             });
+
+            // Make game globally accessible for debugging if needed
+            window.game = game;
 
             const updateGUI = () => {
                 const s = game.state;
@@ -247,7 +251,6 @@
                 // 1 turn = 15 mins. 4 turns = 1 hour. 96 turns = 1 day.
                 const totalHours = Math.floor(turns / 4);
                 const dayNum = Math.floor(totalHours / 24) + 1;
-                const hourOfDay = totalHours % 24;
                 
                 // Day of week (0=Sat, 1=Sun...)
                 const dayIdx = (dayNum - 1) % 7;
@@ -258,12 +261,25 @@
 
                 document.getElementById('stat-day-num').querySelector('.stat-value').textContent = dayNum;
                 document.getElementById('stat-day-sym').textContent = PLANETS[dayPlanetIdx].symbol;
+                document.getElementById('stat-day-sym').style.color = PLANETS[dayPlanetIdx].color;
                 document.getElementById('stat-hour-sym').textContent = PLANETS[hourPlanetIdx].symbol;
+                document.getElementById('stat-hour-sym').style.color = PLANETS[hourPlanetIdx].color;
 
                 nodes.forEach((node, i) => {
                     node.classList.remove('active-day', 'active-hour');
-                    if (i === dayPlanetIdx) node.classList.add('active-day');
-                    if (i === hourPlanetIdx) node.classList.add('active-hour');
+                    node.style.color = PLANETS[i].color;
+                    node.style.borderColor = 'rgba(255,255,255,0.1)';
+                    node.style.boxShadow = 'none';
+
+                    if (i === dayPlanetIdx) {
+                        node.classList.add('active-day');
+                        node.style.borderColor = PLANETS[i].color;
+                        node.style.boxShadow = `0 0 15px ${PLANETS[i].color}`;
+                    }
+                    if (i === hourPlanetIdx) {
+                        node.classList.add('active-hour');
+                        node.style.textShadow = `0 0 10px ${PLANETS[i].color}`;
+                    }
                 });
 
                 document.getElementById('stat-sanity').textContent = f.sanity ?? 100;
@@ -277,17 +293,24 @@
                 invList.innerHTML = s.inventory.length ? s.inventory.map(i => `<li>> ${i.replace(/_/g, ' ').toUpperCase()}</li>`).join('') : '<li>(EMPTY)</li>';
             };
 
+            // Override processInput to update GUI after every command
             const originalProcessInput = game.processInput;
             game.processInput = function(input) {
-                originalProcessInput.call(this, input);
-                setTimeout(updateGUI, 100);
+                const result = originalProcessInput.call(this, input);
+                updateGUI();
+                return result;
             };
 
             try {
-                await game.loadNovel('./lemegeton.js');
+                // Use absolute path logic for GH Pages
+                const novelPath = './lemegeton.js';
+                await game.loadNovel(novelPath);
+                
+                // Force an initial GUI update and room description
+                game.describeRoom();
                 updateGUI();
             } catch (e) {
-                console.error(e);
+                console.error("Game Load Error:", e);
             }
         });
     </script>
