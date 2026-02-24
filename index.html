@@ -715,7 +715,7 @@
                 const code = rawCode.trim().toUpperCase();
                 game.printLine(`{{gray}}Searching for realm [${code}]...{{color_reset}}`);
                 
-                peer = new Peer(PEER_CONFIG); // Auto-id for client
+                peer = new Peer(undefined, PEER_CONFIG); // Auto-id for client
                 
                 peer.on('open', () => {
                     const conn = peer.connect(code, { reliable: true });
