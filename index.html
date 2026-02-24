@@ -448,10 +448,45 @@
                 invList.innerHTML = s.inventory.length ? s.inventory.map(i => `<li>> ${i.replace(/_/g, ' ').toUpperCase()}</li>`).join('') : '<li>(EMPTY)</li>';
             };
 
-            // Override processInput to update GUI after every command
+            const parseSayMessage = (rawInput) => {
+                if (!rawInput || !rawInput.includes('"')) return null;
+
+                const firstQuote = rawInput.indexOf('"');
+                const lastQuote = rawInput.lastIndexOf('"');
+                if (firstQuote === lastQuote) return null;
+
+                let prefixText = rawInput.slice(0, firstQuote).trim();
+                if (prefixText.toLowerCase().startsWith('say ')) {
+                    prefixText = prefixText.slice(4).trim();
+                } else if (prefixText.toLowerCase() === 'say') {
+                    prefixText = '';
+                }
+
+                const spokenText = rawInput.slice(firstQuote + 1, lastQuote).trim();
+                if (!spokenText) return null;
+
+                return {
+                    prefix: prefixText ? `(${prefixText})` : '',
+                    text: spokenText
+                };
+            };
+
+            const handleSayInput = (rawInput) => {
+                const sayPayload = parseSayMessage(rawInput);
+                if (!sayPayload) return false;
+
+                game.printLine(`{{green}}${game.state.flags.playerName}${sayPayload.prefix}: "${sayPayload.text}"{{color_reset}}`);
+                if (game.state.flags.isMultiplayer) {
+                    window.broadcastMsg('say', sayPayload);
+                }
+                return true;
+            };
+
+            // Override processInput to support quote-say syntax and update GUI.
             const originalProcessInput = game.processInput;
             game.processInput = function(input) {
-                const result = originalProcessInput.call(this, input);
+                const handledSay = handleSayInput(input);
+                const result = handledSay ? true : originalProcessInput.call(this, input);
                 updateGUI();
                 return result;
             };
@@ -550,11 +585,19 @@
             let connections = []; // For Host: list of all connected clients
 
             const PEER_CONFIG = {
+                host: '0.peerjs.com',
+                port: 443,
+                secure: true,
                 config: {
-                    'iceServers': [
-                        { url: 'stun:stun.l.google.com:19302' },
-                        { url: 'stun:stun1.l.google.com:19302' },
-                        { url: 'stun:stun2.l.google.com:19302' },
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
                     ]
                 },
                 debug: 1 // Only errors and warnings
@@ -637,17 +680,11 @@
                 game.registerAlias('me', 'emote');
 
                 game.registerCommand('say', {
-                    description: 'Speak: say <any-text> "<say-text>"',
+                    description: 'Speak: <optional-any-text> "<say-text>"',
                     execute: (args) => {
-                        const input = args.join(' ');
-                        const match = input.match(/^(.*?)\s*"(.*)"$/);
-                        if (match) {
-                            const prefix = match[1].trim() ? `(${match[1].trim()})` : '';
-                            const text = match[2].trim();
-                            game.printLine(`{{green}}${game.state.flags.playerName}${prefix}: "${text}"{{color_reset}}`);
-                            window.broadcastMsg('say', { prefix, text });
-                        } else {
-                            game.printLine('{{red}}Usage: say <any-text> "<say-text>"{{color_reset}}');
+                        const rawInput = `say ${args.join(' ')}`.trim();
+                        if (!handleSayInput(rawInput)) {
+                            game.printLine('{{red}}Usage: <optional-any-text> "<say-text>"{{color_reset}}');
                         }
                         return true;
                     }
@@ -715,7 +752,7 @@
                 const code = rawCode.trim().toUpperCase();
                 game.printLine(`{{gray}}Searching for realm [${code}]...{{color_reset}}`);
                 
-                peer = new Peer(PEER_CONFIG); // Auto-id for client
+                peer = new Peer(undefined, PEER_CONFIG); // Auto-id for client
                 
                 peer.on('open', () => {
                     const conn = peer.connect(code, { reliable: true });
