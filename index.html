@@ -196,7 +196,7 @@
         </main>
     </div>
 
-    <script src="node_modules/lorejs/lore.js"></script>
+    <script src="lore.js"></script>
     <script>
         const PLANETS = [
             { name: "Saturn", symbol: "♄", color: "#aaa" },
@@ -234,6 +234,7 @@
             });
 
             const game = new LORE.Game({
+                container: '#game-container',
                 prompt: "{{magenta}}❯{{color_reset}} ",
                 typingSpeed: 20
             });
