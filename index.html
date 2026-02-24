@@ -350,6 +350,7 @@
     </div>
 
     <script src="lore.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script>
         const PLANETS = [
             { name: "Saturn", symbol: "♄", color: "#aaa" },
@@ -538,34 +539,69 @@
                 }
             };
 
-            // --- Multiplayer Logic (localStorage MUD) ---
+            // --- Multiplayer Logic (PeerJS Real-time MUD) ---
             const multiInit = document.getElementById('multi-init');
             const multiHosting = document.getElementById('multi-hosting');
             const serverCodeDisplay = document.getElementById('display-server-code');
             const btnStopMulti = document.getElementById('btn-stop-multi');
             const btnLeaveMulti = document.getElementById('btn-leave-multi');
 
-            const MULTI_ROOMS_KEY = 'lore_mud_rooms';
-            const MULTI_MSG_KEY = 'lore_mud_msg';
+            let peer = null;
+            let connections = []; // For Host: list of all connected clients
 
             window.broadcastMsg = (type, data) => {
                 const msg = {
-                    code: game.state.flags.currentMultiCode,
                     from: game.state.flags.playerName,
                     type,
                     data,
                     ts: Date.now()
                 };
-                localStorage.setItem(MULTI_MSG_KEY, JSON.stringify(msg));
+                
+                if (game.state.flags.isHost) {
+                    // Host sends to all clients
+                    connections.forEach(conn => conn.send(msg));
+                } else if (peer && connections[0]) {
+                    // Client sends to host only
+                    connections[0].send(msg);
+                }
+            };
+
+            window.handleIncomingMsg = (msg) => {
+                if (msg.from === game.state.flags.playerName) return;
+
+                switch(msg.type) {
+                    case 'say':
+                        game.printLine(`{{green}}${msg.from}${msg.data.prefix}: "${msg.data.text}"{{color_reset}}`);
+                        break;
+                    case 'emote':
+                        game.printLine(`{{magenta}}* ${msg.from} ${msg.data.action}{{color_reset}}`);
+                        break;
+                    case 'move':
+                        game.printLine(`{{gray}}[MUD] ${msg.from} moves ${msg.data.dir} to ${msg.data.roomName}{{color_reset}}`);
+                        break;
+                    case 'join':
+                        game.printLine(`{{cyan}}[MUD] ${msg.data.name} has entered the realm.{{color_reset}}`);
+                        break;
+                    case 'leave':
+                        game.printLine(`{{red}}[MUD] ${msg.data.name} has left the realm.{{color_reset}}`);
+                        break;
+                }
+
+                // If Host, relay message to other clients
+                if (game.state.flags.isHost) {
+                    connections.forEach(conn => {
+                        if (conn.peer !== msg.peerId) conn.send(msg);
+                    });
+                }
             };
 
             window.setupMultiplayer = (isHost, code) => {
                 game.state.flags.isMultiplayer = true;
+                game.state.flags.isHost = isHost;
                 game.state.flags.currentMultiCode = code;
                 
                 game.clearScreen();
                 
-                // Toggle UI buttons
                 if (isHost) {
                     btnStopMulti.style.display = 'block';
                     btnLeaveMulti.style.display = 'none';
@@ -575,45 +611,10 @@
                     btnStopMulti.style.display = 'none';
                     btnLeaveMulti.style.display = 'block';
                     game.state.flags.playerName = game.state.flags.playerName || "Adept Kael";
-                    game.printLine(`{{yellow}}System: Joined session [${code}]. You are a Participant (${game.state.flags.playerName}).{{color_reset}}`);
-                    window.broadcastMsg('join', { name: game.state.flags.playerName });
+                    game.printLine(`{{yellow}}System: Connected to [${code}]. You are a Participant (${game.state.flags.playerName}).{{color_reset}}`);
                 }
 
-                // Listen for messages
-                window.addEventListener('storage', (e) => {
-                    if (e.key === MULTI_MSG_KEY && e.newValue) {
-                        try {
-                            const msg = JSON.parse(e.newValue);
-                            if (msg.code !== game.state.flags.currentMultiCode || msg.from === game.state.flags.playerName) return;
-
-                            switch(msg.type) {
-                                case 'say':
-                                    game.printLine(`{{green}}${msg.from}${msg.data.prefix}: "${msg.data.text}"{{color_reset}}`);
-                                    break;
-                                case 'emote':
-                                    game.printLine(`{{magenta}}* ${msg.from} ${msg.data.action}{{color_reset}}`);
-                                    break;
-                                case 'move':
-                                    game.printLine(`{{gray}}[MUD] ${msg.from} moves ${msg.data.dir} to ${msg.data.roomName}{{color_reset}}`);
-                                    break;
-                                case 'join':
-                                    game.printLine(`{{cyan}}[MUD] ${msg.data.name} has entered the realm.{{color_reset}}`);
-                                    break;
-                                case 'leave':
-                                    game.printLine(`{{red}}[MUD] ${msg.data.name} has left the realm.{{color_reset}}`);
-                                    break;
-                            }
-                        } catch (err) { console.error("MUD Msg Error:", err); }
-                    }
-                });
-
-                // Add Desdemona as NPC
-                const currentRoom = game.world.rooms.get(game.state.currentRoom);
-                if (!currentRoom.characters) currentRoom.characters = [];
-                if (!currentRoom.characters.includes('desdemona')) {
-                    currentRoom.characters.push('desdemona');
-                }
-
+                // Register Emote Command
                 game.registerCommand('emote', {
                     description: 'Perform an action',
                     execute: (args) => {
@@ -626,6 +627,7 @@
                 });
                 game.registerAlias('me', 'emote');
 
+                // Register Say Command
                 game.registerCommand('say', {
                     description: 'Speak: say <any-text> "<say-text>"',
                     execute: (args) => {
@@ -643,6 +645,7 @@
                     }
                 });
 
+                // Override Movement
                 const originalMoveToRoom = game.moveToRoom;
                 game.moveToRoom = function(roomId) {
                     const oldRoomId = this.state.currentRoom;
@@ -658,58 +661,91 @@
                     }
                 };
 
+                // Add Desdemona NPC
+                const currentRoom = game.world.rooms.get(game.state.currentRoom);
+                if (currentRoom && (!currentRoom.characters || !currentRoom.characters.includes('desdemona'))) {
+                    currentRoom.characters = currentRoom.characters || [];
+                    currentRoom.characters.push('desdemona');
+                }
+
                 game.describeRoom();
                 updateGUI();
             };
 
             document.getElementById('btn-multi-host').onclick = () => {
-                try {
-                    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
-                    rooms[code] = { active: true, ts: Date.now() };
-                    localStorage.setItem(MULTI_ROOMS_KEY, JSON.stringify(rooms));
-
-                    serverCodeDisplay.textContent = code;
+                const code = "LJS-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+                peer = new Peer(code);
+                
+                peer.on('open', (id) => {
+                    serverCodeDisplay.textContent = id;
                     multiInit.style.display = 'none';
                     multiHosting.style.display = 'block';
-                    window.setupMultiplayer(true, code);
-                } catch (e) {
-                    alert('localStorage access denied! Please run via a web server (e.g., Live Server) or enable cookies.');
-                    console.error(e);
-                }
+                    window.setupMultiplayer(true, id);
+                });
+
+                peer.on('connection', (conn) => {
+                    connections.push(conn);
+                    conn.on('data', (data) => {
+                        data.peerId = conn.peer;
+                        window.handleIncomingMsg(data);
+                    });
+                    conn.on('close', () => {
+                        connections = connections.filter(c => c !== conn);
+                    });
+                });
+
+                peer.on('error', (err) => {
+                    alert('Peer error: ' + err.type);
+                    if (err.type === 'unavailable-id') alert('ID already taken. Try again.');
+                });
             };
 
             document.getElementById('btn-multi-join').onclick = () => {
-                const rawCode = prompt('Enter Server Code:');
+                const rawCode = prompt('Enter Server Code (e.g., LJS-ABCD):');
                 if (!rawCode) return;
                 
                 const code = rawCode.trim().toUpperCase();
-                try {
-                    const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
-                    if (rooms[code] && rooms[code].active) {
+                peer = new Peer(); // Auto-id for client
+                
+                peer.on('open', () => {
+                    const conn = peer.connect(code);
+                    conn.on('open', () => {
+                        connections = [conn];
                         serverCodeDisplay.textContent = code;
                         multiInit.style.display = 'none';
                         multiHosting.style.display = 'block';
                         window.setupMultiplayer(false, code);
-                    } else {
-                        alert('Invalid or expired server code!');
-                        game.printLine('{{red}}Error: Invalid server code.{{color_reset}}');
-                    }
-                } catch (e) {
-                    alert('localStorage access error. Are you in Private/Incognito mode or using file://?');
-                }
+                    });
+                    conn.on('data', (data) => {
+                        window.handleIncomingMsg(data);
+                    });
+                    conn.on('error', (err) => {
+                        alert('Connection error: ' + err);
+                    });
+                    conn.on('close', () => {
+                        alert('Disconnected from host.');
+                        location.reload();
+                    });
+                });
+
+                peer.on('error', (err) => {
+                    alert('Join error: ' + err.type);
+                });
             };
 
             btnStopMulti.onclick = () => {
-                const rooms = JSON.parse(localStorage.getItem(MULTI_ROOMS_KEY) || '{}');
-                delete rooms[game.state.flags.currentMultiCode];
-                localStorage.setItem(MULTI_ROOMS_KEY, JSON.stringify(rooms));
-                window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                if (peer) {
+                    window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                    peer.destroy();
+                }
                 location.reload();
             };
 
             btnLeaveMulti.onclick = () => {
-                window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                if (peer) {
+                    window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                    peer.destroy();
+                }
                 location.reload();
             };
 
