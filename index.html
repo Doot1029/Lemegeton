@@ -23,7 +23,7 @@
         }
 
         body {
-            background-color: #000;
+            background-color: #000000;
             margin: 0;
             padding: 0;
             height: 100vh;
@@ -36,7 +36,9 @@
         }
         /* Style Lore terminal to fit inside PSone container */
         .lore-terminal {
-            background: transparent !important;
+            background: linear-gradient(#0D2289, #06093B) !important;
+            color: #ffb000 !important;
+            text-shadow: 0 0 5px rgba(255, 176, 0, 0.7) !important;
             box-shadow: none !important;
             padding: 10px !important;
             width: 100% !important;
@@ -46,6 +48,10 @@
         }
         .lore-input {
             font-family: 'dungeon mode', sans-serif !important;
+            color: #ffb000 !important;
+            background: transparent !important;
+            border: none !important;
+            outline: none !important;
         }
         .lore-output {
             height: calc(100% - 60px) !important;
@@ -73,7 +79,7 @@
 </head>
 <body class="crt-amber">
     <div id="game-container">
-        <div class="container dark psone-window">
+        <div class="container psone-window">
             <label class="title">Lemegeton: Apotheosis OS v1.0</label>
             <div class="psone-content" id="lore-mount">
                 <!-- LoreJS terminal will be appended here -->
@@ -98,5 +104,8 @@
             });
         });
     </script>
+    <div class="screen">
+        <div class="beam"></div>
+    </div>
 </body>
 </html>
