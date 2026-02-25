@@ -586,7 +586,14 @@
             let connections = []; // For Host: list of all connected clients
 
             const PEER_CONFIG = {
-                debug: 2 // Increased debug level to see more in console
+                debug: 3, // Full verbosity for debugging
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                }
             };
 
             window.broadcastMsg = (type, data) => {
@@ -708,10 +715,20 @@
                 peer = new Peer(code, PEER_CONFIG);
                 
                 peer.on('open', (id) => {
+                    game.printLine(`{{cyan}}System: Handshaking with Peer Server... ID: ${id}{{color_reset}}`);
                     serverCodeDisplay.textContent = id;
                     multiInit.style.display = 'none';
                     multiHosting.style.display = 'block';
                     window.setupMultiplayer(true, id);
+                });
+
+                peer.on('disconnected', () => {
+                    game.printLine(`{{yellow}}System: Disconnected from Peer Server. Reconnecting...{{color_reset}}`);
+                    peer.reconnect();
+                });
+
+                peer.on('close', () => {
+                    game.printLine(`{{red}}System: Peer Network Connection Closed.{{color_reset}}`);
                 });
 
                 document.getElementById('btn-copy-invite').onclick = () => {
@@ -756,50 +773,52 @@
 
             const joinSession = (code) => {
                 code = code.trim().toUpperCase();
-                game.printLine(`{{gray}}Establishing connection to Peer Network...{{color_reset}}`);
+                game.printLine(`{{gray}}System: Initializing Client Peer...{{color_reset}}`);
                 
                 if (peer) peer.destroy();
-                peer = new Peer(undefined, PEER_CONFIG); // Auto-id for client
+                peer = new Peer(undefined, PEER_CONFIG);
                 
                 peer.on('open', (id) => {
-                    game.printLine(`{{gray}}Network ready. Searching for realm [${code}]...{{color_reset}}`);
+                    game.printLine(`{{gray}}System: Client ID [${id}] ready. Requesting connection to [${code}]...{{color_reset}}`);
                     const conn = peer.connect(code, { reliable: true });
                     
-                    // Add a timeout for the connection
                     const timeout = setTimeout(() => {
                         if (!conn.open) {
-                            game.printLine(`{{red}}Connection timed out. Realm [${code}] might be offline.{{color_reset}}`);
+                            game.printLine(`{{red}}System: Connection Timed Out. Peer [${code}] is not responding.{{color_reset}}`);
                             peer.destroy();
                         }
-                    }, 10000);
+                    }, 15000);
 
                     conn.on('open', () => {
                         clearTimeout(timeout);
-                        game.printLine(`{{green}}Connection established! Entering realm...{{color_reset}}`);
+                        game.printLine(`{{green}}System: Connection success! Syncing with host...{{color_reset}}`);
                         connections = [conn];
                         serverCodeDisplay.textContent = code;
                         multiInit.style.display = 'none';
                         multiHosting.style.display = 'block';
                         window.setupMultiplayer(false, code);
                     });
+
                     conn.on('data', (data) => {
                         window.handleIncomingMsg(data);
                     });
+
                     conn.on('error', (err) => {
-                        alert('Connection error: ' + err);
+                        game.printLine(`{{red}}System: Data Channel Error: ${err.message || err.type || err}{{color_reset}}`);
                     });
+
                     conn.on('close', () => {
+                        game.printLine(`{{red}}System: Connection closed by host.{{color_reset}}`);
                         alert('Disconnected from realm host.');
                         location.reload();
                     });
                 });
 
                 peer.on('error', (err) => {
-                    let msg = err.type;
-                    if (err.type === 'peer-dotnet-found') msg = "Server not found. Check the code.";
-                    if (err.type === 'network') msg = "Network error. Check your connection.";
-                    game.printLine(`{{red}}Connection failed: ${msg}{{color_reset}}`);
-                    console.error('PeerJS Error:', err);
+                    let msg = err.message || err.type;
+                    if (err.type === 'peer-unavailable') msg = `Realm [${code}] not found.`;
+                    game.printLine(`{{red}}System: Peer Error: ${msg}{{color_reset}}`);
+                    console.error('PeerJS Detail:', err);
                 });
             };
 
