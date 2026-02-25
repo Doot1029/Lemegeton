@@ -89,8 +89,9 @@
                 const container = document.getElementById('lore-mount');
                 container.appendChild(terminal);
             }
-            game.loadNovel('node_modules/lorejs/games/lemegeton.js');
-            game.start();
+            game.loadNovel('node_modules/lorejs/games/lemegeton.js').then(() => {
+                // Game starts automatically inside loadNovel
+            });
         });
     </script>
 </body>
