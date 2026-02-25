@@ -351,7 +351,7 @@
     </div>
 
     <script src="lore.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const PLANETS = [
             { name: "Saturn", symbol: "♄", color: "#aaa" },
@@ -582,33 +582,16 @@
             const btnStopMulti = document.getElementById('btn-stop-multi');
             const btnLeaveMulti = document.getElementById('btn-leave-multi');
 
-            let peer = null;
-            let connections = []; // For Host: list of all connected clients
-
-            const PEER_CONFIG = {
-                debug: 3, // Full verbosity for debugging
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                }
-            };
+            let socket = null;
 
             window.broadcastMsg = (type, data) => {
-                const msg = {
+                if (!socket) return;
+                socket.emit('broadcast-msg', {
+                    roomId: game.state.flags.currentMultiCode,
                     from: game.state.flags.playerName,
                     type,
-                    data,
-                    ts: Date.now()
-                };
-                
-                if (game.state.flags.isHost) {
-                    connections.forEach(conn => { if (conn.open) conn.send(msg); });
-                } else if (peer && connections[0] && connections[0].open) {
-                    connections[0].send(msg);
-                }
+                    data
+                });
             };
 
             window.handleIncomingMsg = (msg) => {
@@ -631,12 +614,24 @@
                         game.printLine(`{{red}}[MUD] ${msg.data.name} has left the realm.{{color_reset}}`);
                         break;
                 }
+            };
 
-                if (game.state.flags.isHost) {
-                    connections.forEach(conn => {
-                        if (conn.peer !== msg.peerId && conn.open) conn.send(msg);
-                    });
-                }
+            window.initSocket = (code, isHost) => {
+                socket = io();
+                
+                socket.on('connect', () => {
+                    game.printLine(`{{cyan}}System: Connected to Game Server. ID: ${socket.id}{{color_reset}}`);
+                    socket.emit('join-room', code);
+                    window.setupMultiplayer(isHost, code);
+                });
+
+                socket.on('incoming-msg', (msg) => {
+                    window.handleIncomingMsg(msg);
+                });
+
+                socket.on('disconnect', () => {
+                    game.printLine(`{{red}}System: Disconnected from Game Server.{{color_reset}}`);
+                });
             };
 
             window.setupMultiplayer = (isHost, code) => {
@@ -710,30 +705,16 @@
 
             document.getElementById('btn-multi-host').onclick = () => {
                 const code = "LORE-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-                game.printLine(`{{gray}}Starting peer server connection...{{color_reset}}`);
+                game.printLine(`{{gray}}Connecting to game server...{{color_reset}}`);
                 
-                peer = new Peer(code, PEER_CONFIG);
-                
-                peer.on('open', (id) => {
-                    game.printLine(`{{cyan}}System: Handshaking with Peer Server... ID: ${id}{{color_reset}}`);
-                    serverCodeDisplay.textContent = id;
-                    multiInit.style.display = 'none';
-                    multiHosting.style.display = 'block';
-                    window.setupMultiplayer(true, id);
-                });
-
-                peer.on('disconnected', () => {
-                    game.printLine(`{{yellow}}System: Disconnected from Peer Server. Reconnecting...{{color_reset}}`);
-                    peer.reconnect();
-                });
-
-                peer.on('close', () => {
-                    game.printLine(`{{red}}System: Peer Network Connection Closed.{{color_reset}}`);
-                });
+                serverCodeDisplay.textContent = code;
+                multiInit.style.display = 'none';
+                multiHosting.style.display = 'block';
+                window.initSocket(code, true);
 
                 document.getElementById('btn-copy-invite').onclick = () => {
                     const url = new URL(window.location.href);
-                    url.searchParams.set('join', peer.id);
+                    url.searchParams.set('join', code);
                     navigator.clipboard.writeText(url.toString()).then(() => {
                         const btn = document.getElementById('btn-copy-invite');
                         const originalText = btn.textContent;
@@ -741,85 +722,16 @@
                         setTimeout(() => btn.textContent = originalText, 2000);
                     });
                 };
-
-                peer.on('connection', (conn) => {
-                    game.printLine(`{{cyan}}System: Incoming connection from ${conn.peer}...{{color_reset}}`);
-                    
-                    conn.on('open', () => {
-                        game.printLine(`{{green}}System: Connection with ${conn.peer} opened successfully.{{color_reset}}`);
-                        connections.push(conn);
-                    });
-
-                    conn.on('data', (data) => {
-                        data.peerId = conn.peer;
-                        window.handleIncomingMsg(data);
-                    });
-                    
-                    conn.on('error', (err) => {
-                        game.printLine(`{{red}}System: Connection error with ${conn.peer}: ${err}{{color_reset}}`);
-                    });
-
-                    conn.on('close', () => {
-                        game.printLine(`{{red}}System: Player ${conn.peer} disconnected.{{color_reset}}`);
-                        connections = connections.filter(c => c !== conn);
-                    });
-                });
-
-                peer.on('error', (err) => {
-                    game.printLine(`{{red}}Multiplayer Error: ${err.type}{{color_reset}}`);
-                    if (err.type === 'unavailable-id') alert('Server code collision. Please try again.');
-                });
             };
 
             const joinSession = (code) => {
                 code = code.trim().toUpperCase();
-                game.printLine(`{{gray}}System: Initializing Client Peer...{{color_reset}}`);
+                game.printLine(`{{gray}}System: Joining Session [${code}]...{{color_reset}}`);
                 
-                if (peer) peer.destroy();
-                peer = new Peer(undefined, PEER_CONFIG);
-                
-                peer.on('open', (id) => {
-                    game.printLine(`{{gray}}System: Client ID [${id}] ready. Requesting connection to [${code}]...{{color_reset}}`);
-                    const conn = peer.connect(code, { reliable: true });
-                    
-                    const timeout = setTimeout(() => {
-                        if (!conn.open) {
-                            game.printLine(`{{red}}System: Connection Timed Out. Peer [${code}] is not responding.{{color_reset}}`);
-                            peer.destroy();
-                        }
-                    }, 15000);
-
-                    conn.on('open', () => {
-                        clearTimeout(timeout);
-                        game.printLine(`{{green}}System: Connection success! Syncing with host...{{color_reset}}`);
-                        connections = [conn];
-                        serverCodeDisplay.textContent = code;
-                        multiInit.style.display = 'none';
-                        multiHosting.style.display = 'block';
-                        window.setupMultiplayer(false, code);
-                    });
-
-                    conn.on('data', (data) => {
-                        window.handleIncomingMsg(data);
-                    });
-
-                    conn.on('error', (err) => {
-                        game.printLine(`{{red}}System: Data Channel Error: ${err.message || err.type || err}{{color_reset}}`);
-                    });
-
-                    conn.on('close', () => {
-                        game.printLine(`{{red}}System: Connection closed by host.{{color_reset}}`);
-                        alert('Disconnected from realm host.');
-                        location.reload();
-                    });
-                });
-
-                peer.on('error', (err) => {
-                    let msg = err.message || err.type;
-                    if (err.type === 'peer-unavailable') msg = `Realm [${code}] not found.`;
-                    game.printLine(`{{red}}System: Peer Error: ${msg}{{color_reset}}`);
-                    console.error('PeerJS Detail:', err);
-                });
+                serverCodeDisplay.textContent = code;
+                multiInit.style.display = 'none';
+                multiHosting.style.display = 'block';
+                window.initSocket(code, false);
             };
 
             document.getElementById('btn-multi-join').onclick = () => {
@@ -829,17 +741,17 @@
             };
 
             btnStopMulti.onclick = () => {
-                if (peer) {
+                if (socket) {
                     window.broadcastMsg('leave', { name: game.state.flags.playerName });
-                    peer.destroy();
+                    socket.disconnect();
                 }
                 location.reload();
             };
 
             btnLeaveMulti.onclick = () => {
-                if (peer) {
+                if (socket) {
                     window.broadcastMsg('leave', { name: game.state.flags.playerName });
-                    peer.destroy();
+                    socket.disconnect();
                 }
                 location.reload();
             };
