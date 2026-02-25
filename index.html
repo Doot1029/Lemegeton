@@ -4,11 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lemegeton: The Journey to Apotheosis</title>
-    <!-- TuiCss -->
-    <link rel="stylesheet" href="node_modules/tuicss/dist/tuicss.min.css">
+    <!-- PSone.css -->
+    <link rel="stylesheet" href="PSone.css/PSone.min.css">
     <!-- Afterglow CRT -->
     <link rel="stylesheet" href="node_modules/afterglow-crt/crt.css">
     <style>
+        @font-face {
+            font-family: 'dungeon mode';
+            src: url('dungeon-mode.ttf');
+        }
+        @font-face {
+            font-family: 'dungeon mode inverted';
+            src: url('dungeon-mode-inverted.ttf');
+        }
+        @font-face {
+            font-family: 'DungeonFont';
+            src: url('DungeonFont.ttf');
+        }
+
         body {
             background-color: #000;
             margin: 0;
@@ -18,8 +31,10 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            color: #fff;
+            cursor: url('cursor.png'), auto;
         }
-        /* Style Lore terminal to fit inside TUI window */
+        /* Style Lore terminal to fit inside PSone container */
         .lore-terminal {
             background: transparent !important;
             box-shadow: none !important;
@@ -29,29 +44,35 @@
             position: relative !important;
         }
         .lore-output {
-            height: calc(100% - 40px) !important;
+            height: calc(100% - 60px) !important;
         }
         #game-container {
-            background-color: #000;
             position: relative;
-            height: calc(100% - 34px);
+            height: 600px;
+            width: 800px;
+        }
+        .psone-window {
+            height: 100%;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .psone-content {
+            flex: 1;
+            overflow: hidden;
         }
     </style>
 </head>
 <body class="crt-amber">
-    <div class="tui-screen-1024-768 centered bordered">
-        <div class="tui-window" style="width: 100%; height: 100%;">
-            <div class="tui-window-header">
-                <span class="tui-window-header-text">Lemegeton: Apotheosis OS v1.0</span>
-            </div>
-            <div class="tui-window-content" id="game-container">
+    <div id="game-container">
+        <div class="container dark psone-window">
+            <label class="title">Lemegeton: Apotheosis OS v1.0</label>
+            <div class="psone-content" id="lore-mount">
                 <!-- LoreJS terminal will be appended here -->
             </div>
         </div>
     </div>
 
-    <script src="node_modules/tuicss/dist/tuicss.min.js"></script>
     <script src="node_modules/lorejs/lore.js"></script>
     <script>
         // Set up the game
@@ -61,7 +82,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             const terminal = document.querySelector('.lore-terminal');
             if (terminal) {
-                const container = document.getElementById('game-container');
+                const container = document.getElementById('lore-mount');
                 container.appendChild(terminal);
             }
             game.loadNovel('node_modules/lorejs/games/lemegeton.js');
