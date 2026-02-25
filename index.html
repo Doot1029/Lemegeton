@@ -586,14 +586,7 @@
             let connections = []; // For Host: list of all connected clients
 
             const PEER_CONFIG = {
-                debug: 1, // Only errors and warnings
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                }
+                debug: 2 // Increased debug level to see more in console
             };
 
             window.broadcastMsg = (type, data) => {
@@ -733,12 +726,24 @@
                 };
 
                 peer.on('connection', (conn) => {
-                    connections.push(conn);
+                    game.printLine(`{{cyan}}System: Incoming connection from ${conn.peer}...{{color_reset}}`);
+                    
+                    conn.on('open', () => {
+                        game.printLine(`{{green}}System: Connection with ${conn.peer} opened successfully.{{color_reset}}`);
+                        connections.push(conn);
+                    });
+
                     conn.on('data', (data) => {
                         data.peerId = conn.peer;
                         window.handleIncomingMsg(data);
                     });
+                    
+                    conn.on('error', (err) => {
+                        game.printLine(`{{red}}System: Connection error with ${conn.peer}: ${err}{{color_reset}}`);
+                    });
+
                     conn.on('close', () => {
+                        game.printLine(`{{red}}System: Player ${conn.peer} disconnected.{{color_reset}}`);
                         connections = connections.filter(c => c !== conn);
                     });
                 });
