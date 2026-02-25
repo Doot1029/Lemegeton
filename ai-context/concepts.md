@@ -256,7 +256,10 @@ Vehuiah, Ielial, Sitael, Elemiah, Mahasiah, Iehahel, Achaiah, Cahethel, Haziel, 
 
 There are planetary rulers for each day and hour. The first hour (1 AM) is the same hour of the planet’s day. To structure this idea in your mind, try and imagine this: The first hour (1 AM) of Saturday is saturn, the first hour of Sunday is the sun, the first hour of Monday is the moon, the first hour of Tuesday is mars, wednesday is mercury, thursday is jupiter, and lastly friday is venus. To fill in the blanks, you must follow the chaldean order, as the hours cycle continuously:
 Saturn → Jupiter → Mars → Sun → Venus → Mercury → Moon
-…Then back to Saturn. Rinse and repeat.
+…Then back to Saturn. Rinse and repeat. The planetary clock will look like this in-game:
+Day: <day-count>
+Weekday: <weekday-planet-symbol>
+Hour: <hour-planet-symbol>
 
 King - Sun - Gold (Color: Gold)
 Prince - Jupiter - Tin (Color: Blue)

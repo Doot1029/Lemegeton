@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 34,
+            "activePatchIndex": 43,
             "patches": [
                 {
                     "date": 1771906468520,
@@ -144,6 +144,42 @@
                 {
                     "date": 1771918970508,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,5 +8,7 @@\n * Code in \"lemegeton.js\".\r\n * Intergrate a terminal from folder lorejs\r\n * use the command: \"node index.js\" to test the game\r\n * Explore all of the commands in-game\r\n-* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\n\\ No newline at end of file\n+* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\r\n+\r\n+☿\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981490530,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,14 +1,11 @@\n-<!--\r\n-Add custom instructions for the agents below\r\n--->\r\n-\r\n-# Info about LoreJS\r\n-* Read everything in the folder called \"ai-context\"\r\n-* Read everything in the folder \"node_modules > lorejs > games\"\r\n-* Code in \"lemegeton.js\".\r\n-* Intergrate a terminal from folder lorejs\r\n-* use the command: \"node index.js\" to test the game\r\n-* Explore all of the commands in-game\r\n-* give me an accurate multiple step tutorial on how to play the game by giving me the commands in order\r\n-\r\n-☿\n\\ No newline at end of file\n+<!--\n+Add custom instructions for the agents below\n+-->\n+\n+# Info about LoreJS\n+* Read everything in the folder called \"ai-context\"\n+* Read everything in the folder \"node_modules > lorejs > games\"\n+* Code in \"lemegeton.js\".\n+* Intergrate a terminal from folder lorejs\n+* Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n+* Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n"
+                },
+                {
+                    "date": 1771981496249,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,12 @@\n+<!--\n+Add custom instructions for the agents below\n+-->\n+\n+# Info about LoreJS\n+* Read everything in the folder called \"ai-context\"\n+* Read everything in the folder \"node_modules > lorejs > games\"\n+* Code in \"lemegeton.js\".\n+* Intergrate a terminal from folder lorejs\n+* Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n+* Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n+* Add a commit message\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981511246,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,15 +9,5 @@\n * Intergrate a terminal from folder lorejs\n * Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n * Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n * Add a commit message\n-<!--\n-Add custom instructions for the agents below\n--->\n-\n-# Info about LoreJS\n-* Read everything in the folder called \"ai-context\"\n-* Read everything in the folder \"node_modules > lorejs > games\"\n-* Code in \"lemegeton.js\".\n-* Intergrate a terminal from folder lorejs\n-* Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n-* Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n\\ No newline at end of file\n+* do `\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981519968,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,6 +8,6 @@\n * Code in \"lemegeton.js\".\n * Intergrate a terminal from folder lorejs\n * Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n * Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n-* Add a commit message\n+* Add a commit message and commit in\n * do `\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981527398,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,6 +8,6 @@\n * Code in \"lemegeton.js\".\n * Intergrate a terminal from folder lorejs\n * Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n * Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n-* Add a commit message and commit in\n+* Add a commit message and commit in terminal\n * do `\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981539842,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,5 +9,5 @@\n * Intergrate a terminal from folder lorejs\n * Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n * Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n * Add a commit message and commit in terminal\n-* do `\n\\ No newline at end of file\n+* push in origin main\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981822060,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -6,8 +6,8 @@\n * Read everything in the folder called \"ai-context\"\n * Read everything in the folder \"node_modules > lorejs > games\"\n * Code in \"lemegeton.js\".\n * Intergrate a terminal from folder lorejs\n-* Use the command: \"node index.js\" to test the game locally or open \"index.html\" in a browser.\n+* Use the command: \"node index.js\" to test the game locally.\n * Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n * Add a commit message and commit in terminal\n * push in origin main\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981863419,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,12 @@\n+<!--\n+Add custom instructions for the agents below\n+-->\n+\n+# Info about LoreJS\n+* Read everything in the folder called \"ai-context\"\n+* Read everything in the folder \"node_modules > lorejs > games\"\n+* Code in \"lemegeton.js\".\n+* Intergrate a terminal from folder lorejs\n+* Use the command: \"node index.js\" to test the game locally.\n+* Add a commit message and commit in terminal\n+* push in origin main\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1771981872671,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -8,18 +8,5 @@\n * Code in \"lemegeton.js\".\n * Intergrate a terminal from folder lorejs\n * Use the command: \"node index.js\" to test the game locally.\n * Add a commit message and commit in terminal\n-* push in origin main\n-<!--\n-Add custom instructions for the agents below\n--->\n-\n-# Info about LoreJS\n-* Read everything in the folder called \"ai-context\"\n-* Read everything in the folder \"node_modules > lorejs > games\"\n-* Code in \"lemegeton.js\".\n-* Intergrate a terminal from folder lorejs\n-* Use the command: \"node index.js\" to test the game locally.\n-* Terminal is integrated into the GUI in \"index.html\" using \"lore.js\".\n-* Add a commit message and commit in terminal\n * push in origin main\n\\ No newline at end of file\n"
                 }
             ],
             "date": 1771906468520,
