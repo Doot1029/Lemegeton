@@ -586,22 +586,14 @@
             let connections = []; // For Host: list of all connected clients
 
             const PEER_CONFIG = {
-                host: '0.peerjs.com',
-                port: 443,
-                secure: true,
+                debug: 1, // Only errors and warnings
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        }
+                        { urls: 'stun:stun2.l.google.com:19302' }
                     ]
-                },
-                debug: 1 // Only errors and warnings
+                }
             };
 
             window.broadcastMsg = (type, data) => {
@@ -759,13 +751,26 @@
 
             const joinSession = (code) => {
                 code = code.trim().toUpperCase();
-                game.printLine(`{{gray}}Searching for realm [${code}]...{{color_reset}}`);
+                game.printLine(`{{gray}}Establishing connection to Peer Network...{{color_reset}}`);
                 
+                if (peer) peer.destroy();
                 peer = new Peer(undefined, PEER_CONFIG); // Auto-id for client
                 
-                peer.on('open', () => {
+                peer.on('open', (id) => {
+                    game.printLine(`{{gray}}Network ready. Searching for realm [${code}]...{{color_reset}}`);
                     const conn = peer.connect(code, { reliable: true });
+                    
+                    // Add a timeout for the connection
+                    const timeout = setTimeout(() => {
+                        if (!conn.open) {
+                            game.printLine(`{{red}}Connection timed out. Realm [${code}] might be offline.{{color_reset}}`);
+                            peer.destroy();
+                        }
+                    }, 10000);
+
                     conn.on('open', () => {
+                        clearTimeout(timeout);
+                        game.printLine(`{{green}}Connection established! Entering realm...{{color_reset}}`);
                         connections = [conn];
                         serverCodeDisplay.textContent = code;
                         multiInit.style.display = 'none';
@@ -785,7 +790,11 @@
                 });
 
                 peer.on('error', (err) => {
-                    game.printLine(`{{red}}Connection failed: ${err.type}{{color_reset}}`);
+                    let msg = err.type;
+                    if (err.type === 'peer-dotnet-found') msg = "Server not found. Check the code.";
+                    if (err.type === 'network') msg = "Network error. Check your connection.";
+                    game.printLine(`{{red}}Connection failed: ${msg}{{color_reset}}`);
+                    console.error('PeerJS Error:', err);
                 });
             };
 
