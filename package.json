@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "afterglow-crt": "^1.0.1",
     "lorejs": "^1.0.3"
   }
 }
