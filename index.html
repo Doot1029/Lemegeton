@@ -155,6 +155,94 @@
 
         .lore-output::-webkit-scrollbar { width: 6px; }
         .lore-output::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        /* Menu Overlay */
+        #menu-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #menu-window {
+            width: 500px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-tabs {
+            display: flex;
+            background: rgba(255,255,255,0.1);
+            border-bottom: 2px solid var(--ff-border);
+        }
+
+        .menu-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .menu-tab.active {
+            background: var(--ff-blue-top);
+            color: var(--term-cyan);
+            border-bottom: 2px solid var(--term-cyan);
+            margin-bottom: -2px;
+        }
+
+        .menu-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .menu-section { display: none; }
+        .menu-section.active { display: block; }
+
+        .menu-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--ff-border);
+            color: white;
+            padding: 10px;
+            font-family: var(--pixel-font);
+            font-size: 0.7em;
+            cursor: pointer;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: var(--term-yellow);
+        }
+
+        .menu-label {
+            font-size: 0.7em;
+            margin-bottom: 5px;
+            color: var(--term-cyan);
+            text-transform: uppercase;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .server-code-display {
+            background: rgba(0,0,0,0.5);
+            border: 1px dashed var(--term-magenta);
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2em;
+            color: var(--term-magenta);
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -181,6 +269,7 @@
 
             <div class="gui-panel">
                 <div class="gui-header">Status</div>
+                <div class="stat-row"><span>PLAYER</span> <span id="stat-player" class="stat-value">Desdemona</span></div>
                 <div class="stat-row"><span>RANK</span> <span id="stat-rank" class="stat-value">Novice</span></div>
                 <div class="stat-row"><span>TURNS</span> <span id="stat-turns" class="stat-value">0</span></div>
             </div>
@@ -189,6 +278,8 @@
                 <div class="gui-header">Inventory</div>
                 <ul id="inventory-list" style="list-style:none; padding:0; font-size:0.7em; color:var(--term-yellow);"></ul>
             </div>
+
+            <button id="btn-open-menu" class="menu-btn" style="margin-top:auto; text-align:center; border-width:2px;">SYSTEM MENU</button>
         </aside>
 
         <main id="terminal-wrapper" class="ff-window">
@@ -196,7 +287,71 @@
         </main>
     </div>
 
+    <div id="menu-overlay">
+        <div id="menu-window" class="ff-window">
+            <div class="menu-tabs">
+                <div class="menu-tab active" data-tab="audio">Audio</div>
+                <div class="menu-tab" data-tab="save">Save/Load</div>
+                <div class="menu-tab" data-tab="settings">Settings</div>
+                <div class="menu-tab" data-tab="multi">Multiplayer</div>
+                <div class="menu-tab" id="btn-close-menu" style="margin-left:auto; border-right:none; border-left:1px solid rgba(255,255,255,0.2);">X</div>
+            </div>
+            <div class="menu-content">
+                <!-- Audio Section -->
+                <div id="tab-audio" class="menu-section active">
+                    <div class="menu-label">Master Volume</div>
+                    <input type="range" id="volume-master" min="0" max="100" value="80">
+                    <div class="menu-label">Music Volume</div>
+                    <input type="range" id="volume-music" min="0" max="100" value="60">
+                    <button class="menu-btn" id="btn-mute">Mute All Audio</button>
+                </div>
+
+                <!-- Save/Load Section -->
+                <div id="tab-save" class="menu-section">
+                    <button class="menu-btn" id="btn-save-game">Save Game (Slot 1)</button>
+                    <button class="menu-btn" id="btn-load-game">Load Game (Slot 1)</button>
+                    <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
+                    <button class="menu-btn" id="btn-download-logs" style="border-color:var(--term-green); color:var(--term-green);">DOWNLOAD SESSION LOGS (.TXT)</button>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="tab-settings" class="menu-section">
+                    <div class="menu-label">Character Name</div>
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="text" id="input-player-name" style="flex:1; background:rgba(0,0,0,0.5); border:1px solid var(--ff-border); color:white; padding:5px; font-family:var(--pixel-font); font-size:0.7em;" placeholder="Enter name...">
+                        <button class="menu-btn" id="btn-change-name" style="width:auto; margin-bottom:0;">SET</button>
+                    </div>
+                    <div class="menu-label">Text Speed</div>
+                    <input type="range" id="setting-text-speed" min="1" max="100" value="20">
+                    <button class="menu-btn" id="btn-clear-history">Clear Command History</button>
+                    <button class="menu-btn" id="btn-reset-game" style="border-color:var(--term-red); color:var(--term-red);">Hard Reset Game</button>
+                </div>
+
+                <!-- Multiplayer Section -->
+                <div id="tab-multi" class="menu-section">
+                    <div id="multi-init">
+                        <button class="menu-btn" id="btn-multi-host">Host New Session</button>
+                        <button class="menu-btn" id="btn-multi-join">Join Session with Code</button>
+                    </div>
+                    <div id="multi-hosting" style="display:none;">
+                        <div class="menu-label">Server Code</div>
+                        <div class="server-code-display" id="display-server-code">----</div>
+                        <button class="menu-btn" id="btn-copy-invite" style="margin-bottom: 15px; border-color: var(--term-cyan); color: var(--term-cyan);">Copy Invite Link</button>
+                        <div class="menu-label">Players (1/4)</div>
+                        <ul id="multi-player-list" style="font-size:0.7em; margin-bottom:15px;">
+                            <li>Desdemona (NPC)</li>
+                            <li id="li-me-player" style="color:var(--term-green);">You (Cultist 1)</li>
+                        </ul>
+                        <button class="menu-btn" id="btn-stop-multi">Stop Hosting</button>
+                        <button class="menu-btn" id="btn-leave-multi" style="display:none;">Leave Session</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="lore.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const PLANETS = [
             { name: "Saturn", symbol: "♄", color: "#aaa" },
@@ -286,6 +441,7 @@
                 document.getElementById('stat-wrath').textContent = f.wrath ?? 0;
                 document.getElementById('stat-loyalty').textContent = f.loyalty ?? 0;
                 
+                document.getElementById('stat-player').textContent = f.playerName ?? "Desdemona";
                 document.getElementById('stat-rank').textContent = f.cultRank ?? "Novice";
                 document.getElementById('stat-turns').textContent = turns;
 
@@ -293,12 +449,311 @@
                 invList.innerHTML = s.inventory.length ? s.inventory.map(i => `<li>> ${i.replace(/_/g, ' ').toUpperCase()}</li>`).join('') : '<li>(EMPTY)</li>';
             };
 
-            // Override processInput to update GUI after every command
+            const parseSayMessage = (rawInput) => {
+                if (!rawInput || !rawInput.includes('"')) return null;
+
+                const firstQuote = rawInput.indexOf('"');
+                const lastQuote = rawInput.lastIndexOf('"');
+                if (firstQuote === lastQuote) return null;
+
+                let prefixText = rawInput.slice(0, firstQuote).trim();
+                if (prefixText.toLowerCase().startsWith('say ')) {
+                    prefixText = prefixText.slice(4).trim();
+                } else if (prefixText.toLowerCase() === 'say') {
+                    prefixText = '';
+                }
+
+                const spokenText = rawInput.slice(firstQuote + 1, lastQuote).trim();
+                if (!spokenText) return null;
+
+                return {
+                    prefix: prefixText ? `(${prefixText})` : '',
+                    text: spokenText
+                };
+            };
+
+            const handleSayInput = (rawInput) => {
+                const sayPayload = parseSayMessage(rawInput);
+                if (!sayPayload) return false;
+
+                game.printLine(`{{green}}${game.state.flags.playerName}${sayPayload.prefix}: "${sayPayload.text}"{{color_reset}}`);
+                if (game.state.flags.isMultiplayer) {
+                    window.broadcastMsg('say', sayPayload);
+                }
+                return true;
+            };
+
+            // Override processInput to support quote-say syntax and update GUI.
             const originalProcessInput = game.processInput;
             game.processInput = function(input) {
-                const result = originalProcessInput.call(this, input);
+                const handledSay = handleSayInput(input);
+                const result = handledSay ? true : originalProcessInput.call(this, input);
                 updateGUI();
                 return result;
+            };
+
+            // --- Menu Logic ---
+            const menuOverlay = document.getElementById('menu-overlay');
+            const btnOpenMenu = document.getElementById('btn-open-menu');
+            const btnCloseMenu = document.getElementById('btn-close-menu');
+            const tabs = document.querySelectorAll('.menu-tab[data-tab]');
+            const sections = document.querySelectorAll('.menu-section');
+
+            btnOpenMenu.onclick = () => menuOverlay.style.display = 'flex';
+            btnCloseMenu.onclick = () => menuOverlay.style.display = 'none';
+
+            tabs.forEach(tab => {
+                tab.onclick = () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+                };
+            });
+
+            // --- Audio Logic ---
+            let isMuted = false;
+            const btnMute = document.getElementById('btn-mute');
+            btnMute.onclick = () => {
+                isMuted = !isMuted;
+                btnMute.textContent = isMuted ? 'Unmute All Audio' : 'Mute All Audio';
+                // Logic to actually mute audio would go here
+                game.printLine(isMuted ? '{{gray}}[Audio Muted]{{color_reset}}' : '{{gray}}[Audio Unmuted]{{color_reset}}');
+            };
+
+            // --- Save/Load & Logs ---
+            document.getElementById('btn-save-game').onclick = () => {
+                game.saveGame();
+                game.printLine('{{green}}Game state captured in Slot 1.{{color_reset}}');
+            };
+            document.getElementById('btn-load-game').onclick = () => {
+                game.loadGame();
+                updateGUI();
+            };
+
+            document.getElementById('btn-download-logs').onclick = () => {
+                const output = document.getElementById('game-container').querySelector('.lore-output');
+                const logText = output.innerText || output.textContent;
+                const blob = new Blob([logText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lemegeton_session_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                game.printLine('{{green}}Session logs downloaded successfully.{{color_reset}}');
+            };
+
+            // --- Settings ---
+            const speedSlider = document.getElementById('setting-text-speed');
+            speedSlider.oninput = () => {
+                game.config.typingSpeed = parseInt(speedSlider.value);
+            };
+
+            const inputPlayerName = document.getElementById('input-player-name');
+            document.getElementById('btn-change-name').onclick = () => {
+                const newName = inputPlayerName.value.trim();
+                if (newName) {
+                    game.state.flags.playerName = newName;
+                    game.printLine(`{{green}}Identity updated: You are now known as ${newName}.{{color_reset}}`);
+                    updateGUI();
+                    inputPlayerName.value = '';
+                }
+            };
+
+            document.getElementById('btn-clear-history').onclick = () => {
+                game.state.history = [];
+                game.printLine('{{gray}}Command history cleared.{{color_reset}}');
+            };
+
+            document.getElementById('btn-reset-game').onclick = () => {
+                if (confirm('Are you sure you want to completely reset? All progress will be lost.')) {
+                    localStorage.removeItem('lore_save_data');
+                    location.reload();
+                }
+            };
+
+            // --- Multiplayer Logic (PeerJS Real-time MUD) ---
+            const multiInit = document.getElementById('multi-init');
+            const multiHosting = document.getElementById('multi-hosting');
+            const serverCodeDisplay = document.getElementById('display-server-code');
+            const btnStopMulti = document.getElementById('btn-stop-multi');
+            const btnLeaveMulti = document.getElementById('btn-leave-multi');
+
+            let socket = null;
+
+            window.broadcastMsg = (type, data) => {
+                if (!socket) return;
+                socket.emit('broadcast-msg', {
+                    roomId: game.state.flags.currentMultiCode,
+                    from: game.state.flags.playerName,
+                    type,
+                    data
+                });
+            };
+
+            window.handleIncomingMsg = (msg) => {
+                if (msg.from === game.state.flags.playerName) return;
+
+                switch(msg.type) {
+                    case 'say':
+                        game.printLine(`{{green}}${msg.from}${msg.data.prefix}: "${msg.data.text}"{{color_reset}}`);
+                        break;
+                    case 'emote':
+                        game.printLine(`{{magenta}}* ${msg.from} ${msg.data.action}{{color_reset}}`);
+                        break;
+                    case 'move':
+                        game.printLine(`{{gray}}[MUD] ${msg.from} moves ${msg.data.dir} to ${msg.data.roomName}{{color_reset}}`);
+                        break;
+                    case 'join':
+                        game.printLine(`{{cyan}}[MUD] ${msg.data.name} has entered the realm.{{color_reset}}`);
+                        break;
+                    case 'leave':
+                        game.printLine(`{{red}}[MUD] ${msg.data.name} has left the realm.{{color_reset}}`);
+                        break;
+                }
+            };
+
+            window.initSocket = (code, isHost) => {
+                socket = io();
+                
+                socket.on('connect', () => {
+                    game.printLine(`{{cyan}}System: Connected to Game Server. ID: ${socket.id}{{color_reset}}`);
+                    socket.emit('join-room', code);
+                    window.setupMultiplayer(isHost, code);
+                });
+
+                socket.on('incoming-msg', (msg) => {
+                    window.handleIncomingMsg(msg);
+                });
+
+                socket.on('disconnect', () => {
+                    game.printLine(`{{red}}System: Disconnected from Game Server.{{color_reset}}`);
+                });
+            };
+
+            window.setupMultiplayer = (isHost, code) => {
+                game.state.flags.isMultiplayer = true;
+                game.state.flags.isHost = isHost;
+                game.state.flags.currentMultiCode = code;
+                
+                game.clearScreen();
+                
+                if (isHost) {
+                    btnStopMulti.style.display = 'block';
+                    btnLeaveMulti.style.display = 'none';
+                    game.state.flags.playerName = game.state.flags.playerName || "Adept Elara";
+                    game.printLine(`{{cyan}}System: Global Session [${code}] started. Hosting as ${game.state.flags.playerName}.{{color_reset}}`);
+                } else {
+                    btnStopMulti.style.display = 'none';
+                    btnLeaveMulti.style.display = 'block';
+                    game.state.flags.playerName = game.state.flags.playerName || "Adept Kael";
+                    game.printLine(`{{yellow}}System: Connected Globally to [${code}] as ${game.state.flags.playerName}.{{color_reset}}`);
+                    window.broadcastMsg('join', { name: game.state.flags.playerName });
+                }
+
+                // ... [commands and movement remain identical] ...
+                game.registerCommand('emote', {
+                    description: 'Perform an action',
+                    execute: (args) => {
+                        if (args.length === 0) return false;
+                        const action = args.join(' ');
+                        game.printLine(`{{magenta}}* ${game.state.flags.playerName} ${action}{{color_reset}}`);
+                        window.broadcastMsg('emote', { action });
+                        return true;
+                    }
+                });
+                game.registerAlias('me', 'emote');
+
+                game.registerCommand('say', {
+                    description: 'Speak: <optional-any-text> "<say-text>"',
+                    execute: (args) => {
+                        const rawInput = `say ${args.join(' ')}`.trim();
+                        if (!handleSayInput(rawInput)) {
+                            game.printLine('{{red}}Usage: <optional-any-text> "<say-text>"{{color_reset}}');
+                        }
+                        return true;
+                    }
+                });
+
+                const originalMoveToRoom = game.moveToRoom;
+                game.moveToRoom = function(roomId) {
+                    const oldRoomId = this.state.currentRoom;
+                    const oldRoom = this.world.rooms.get(oldRoomId);
+                    originalMoveToRoom.call(this, roomId);
+                    if (this.state.currentRoom === roomId && oldRoomId !== roomId) {
+                        const newRoom = this.world.rooms.get(roomId);
+                        let dir = "away";
+                        if (oldRoom && oldRoom.exits) {
+                            for (const d in oldRoom.exits) if (oldRoom.exits[d] === roomId) { dir = d; break; }
+                        }
+                        window.broadcastMsg('move', { dir, roomName: newRoom.name });
+                    }
+                };
+
+                const currentRoom = game.world.rooms.get(game.state.currentRoom);
+                if (currentRoom && (!currentRoom.characters || !currentRoom.characters.includes('desdemona'))) {
+                    currentRoom.characters = currentRoom.characters || [];
+                    currentRoom.characters.push('desdemona');
+                }
+
+                game.describeRoom();
+                updateGUI();
+            };
+
+            document.getElementById('btn-multi-host').onclick = () => {
+                const code = "LORE-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+                game.printLine(`{{gray}}Connecting to game server...{{color_reset}}`);
+                
+                serverCodeDisplay.textContent = code;
+                multiInit.style.display = 'none';
+                multiHosting.style.display = 'block';
+                window.initSocket(code, true);
+
+                document.getElementById('btn-copy-invite').onclick = () => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('join', code);
+                    navigator.clipboard.writeText(url.toString()).then(() => {
+                        const btn = document.getElementById('btn-copy-invite');
+                        const originalText = btn.textContent;
+                        btn.textContent = 'COPIED!';
+                        setTimeout(() => btn.textContent = originalText, 2000);
+                    });
+                };
+            };
+
+            const joinSession = (code) => {
+                code = code.trim().toUpperCase();
+                game.printLine(`{{gray}}System: Joining Session [${code}]...{{color_reset}}`);
+                
+                serverCodeDisplay.textContent = code;
+                multiInit.style.display = 'none';
+                multiHosting.style.display = 'block';
+                window.initSocket(code, false);
+            };
+
+            document.getElementById('btn-multi-join').onclick = () => {
+                const rawCode = prompt('Enter Server Code (e.g., LORE-XXXXXX):');
+                if (!rawCode) return;
+                joinSession(rawCode);
+            };
+
+            btnStopMulti.onclick = () => {
+                if (socket) {
+                    window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                    socket.disconnect();
+                }
+                location.reload();
+            };
+
+            btnLeaveMulti.onclick = () => {
+                if (socket) {
+                    window.broadcastMsg('leave', { name: game.state.flags.playerName });
+                    socket.disconnect();
+                }
+                location.reload();
             };
 
             try {
@@ -309,6 +764,24 @@
                 // Force an initial GUI update and room description
                 game.describeRoom();
                 updateGUI();
+
+                // Check for auto-join link
+                const urlParams = new URLSearchParams(window.location.search);
+                const joinCode = urlParams.get('join');
+                if (joinCode) {
+                    setTimeout(() => {
+                        joinSession(joinCode);
+                        // Open the menu to show multiplayer tab
+                        menuOverlay.style.display = 'flex';
+                        tabs.forEach(t => t.classList.remove('active'));
+                        sections.forEach(s => s.classList.remove('active'));
+                        const multiTab = document.querySelector('.menu-tab[data-tab="multi"]');
+                        if (multiTab) {
+                            multiTab.classList.add('active');
+                            document.getElementById('tab-multi').classList.add('active');
+                        }
+                    }, 1000); // Small delay to ensure game is ready
+                }
             } catch (e) {
                 console.error("Game Load Error:", e);
             }
