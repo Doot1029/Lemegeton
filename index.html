@@ -336,6 +336,7 @@
                     <div id="multi-hosting" style="display:none;">
                         <div class="menu-label">Server Code</div>
                         <div class="server-code-display" id="display-server-code">----</div>
+                        <button class="menu-btn" id="btn-copy-invite" style="margin-bottom: 15px; border-color: var(--term-cyan); color: var(--term-cyan);">Copy Invite Link</button>
                         <div class="menu-label">Players (1/4)</div>
                         <ul id="multi-player-list" style="font-size:0.7em; margin-bottom:15px;">
                             <li>Desdemona (NPC)</li>
@@ -728,6 +729,17 @@
                     window.setupMultiplayer(true, id);
                 });
 
+                document.getElementById('btn-copy-invite').onclick = () => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('join', peer.id);
+                    navigator.clipboard.writeText(url.toString()).then(() => {
+                        const btn = document.getElementById('btn-copy-invite');
+                        const originalText = btn.textContent;
+                        btn.textContent = 'COPIED!';
+                        setTimeout(() => btn.textContent = originalText, 2000);
+                    });
+                };
+
                 peer.on('connection', (conn) => {
                     connections.push(conn);
                     conn.on('data', (data) => {
@@ -745,11 +757,8 @@
                 });
             };
 
-            document.getElementById('btn-multi-join').onclick = () => {
-                const rawCode = prompt('Enter Server Code (e.g., LORE-XXXXXX):');
-                if (!rawCode) return;
-                
-                const code = rawCode.trim().toUpperCase();
+            const joinSession = (code) => {
+                code = code.trim().toUpperCase();
                 game.printLine(`{{gray}}Searching for realm [${code}]...{{color_reset}}`);
                 
                 peer = new Peer(undefined, PEER_CONFIG); // Auto-id for client
@@ -780,6 +789,12 @@
                 });
             };
 
+            document.getElementById('btn-multi-join').onclick = () => {
+                const rawCode = prompt('Enter Server Code (e.g., LORE-XXXXXX):');
+                if (!rawCode) return;
+                joinSession(rawCode);
+            };
+
             btnStopMulti.onclick = () => {
                 if (peer) {
                     window.broadcastMsg('leave', { name: game.state.flags.playerName });
@@ -804,6 +819,24 @@
                 // Force an initial GUI update and room description
                 game.describeRoom();
                 updateGUI();
+
+                // Check for auto-join link
+                const urlParams = new URLSearchParams(window.location.search);
+                const joinCode = urlParams.get('join');
+                if (joinCode) {
+                    setTimeout(() => {
+                        joinSession(joinCode);
+                        // Open the menu to show multiplayer tab
+                        menuOverlay.style.display = 'flex';
+                        tabs.forEach(t => t.classList.remove('active'));
+                        sections.forEach(s => s.classList.remove('active'));
+                        const multiTab = document.querySelector('.menu-tab[data-tab="multi"]');
+                        if (multiTab) {
+                            multiTab.classList.add('active');
+                            document.getElementById('tab-multi').classList.add('active');
+                        }
+                    }, 1000); // Small delay to ensure game is ready
+                }
             } catch (e) {
                 console.error("Game Load Error:", e);
             }
