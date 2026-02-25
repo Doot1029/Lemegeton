@@ -1,5 +1,10 @@
 {
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "lorejs": "^1.0.3"
+    "express": "^4.21.2",
+    "lorejs": "^1.0.3",
+    "socket.io": "^4.8.1"
   }
 }
