@@ -1,4 +1,0 @@
-take ritual_knife  
-use ritual_knife  
-go upstairs  
-look  
