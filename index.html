@@ -52,6 +52,8 @@
             border: none !important;
             outline: none !important;
             font-size: 2.5rem !important;
+            cursor: url('text-cursor.png'), auto !important;
+            user-select: text !important;
         }
         .lore-output {
             height: calc(100% - 60px) !important;
@@ -59,7 +61,7 @@
         #game-container {
             position: relative;
             height: 600px;
-            width: 800px;
+            width: 1100px;
         }
         .psone-window {
             height: 100%;
@@ -71,9 +73,32 @@
             flex: 1;
             overflow: hidden;
         }
+        .status-panel {
+            border: 2px solid #fff;
+            border-radius: 10px;
+            background: linear-gradient(#0D2289, #06093B);
+            box-shadow: inset 0 0 15px rgba(255, 176, 0, 0.25);
+            color: #ffb000;
+            font-family: 'dungeon mode', monospace;
+            font-size: 1.8rem;
+            line-height: 1;
+            padding: 10px;
+            white-space: pre;
+            align-self: auto;
+            cursor: default;
+            user-select: text;
+        }
+
+        .text-cursor {
+            cursor: text !important;
+        }
+        .select-cursor {
+            cursor: default !important;
+            user-select: text;
+        }
         /* Make Dungeon Mode larger */
         span[style*="dungeon mode"] {
-            font-size: 1.5em;
+            font-size: 0.5em;
         }
     </style>
 </head>
@@ -86,7 +111,6 @@
             </div>
         </div>
     </div>
-
     <script src="node_modules/lorejs/lore.js"></script>
     <script>
         // Set up the game
@@ -106,3 +130,4 @@
     </script>
 </body>
 </html>
+
