@@ -1,0 +1,234 @@
+diff --git a/node_modules/lorejs/games/lemegeton.js b/node_modules/lorejs/games/lemegeton.js
+index fe3b5a0a2991aa6b3a2e25fb2c6e5d05776b11cf..eb28f82210bda0a35415dcf506f6d6aa73bd050e 100644
+--- a/node_modules/lorejs/games/lemegeton.js
++++ b/node_modules/lorejs/games/lemegeton.js
+@@ -1,36 +1,194 @@
+-let state = {
+-    day: 1,
+-    weekday: "saturn",
+-    hour: "saturn"
+-};
++const IDLE_ANIMATIONS = [
++  [
++    String.raw`   .-.
++  (o o)
++  | O \
++   \   \
++    \\   \ 
++     \\   \ 
++      ''  ''`,
++    String.raw`   .-.
++  (o o)
++  | O \
++   \   \
++    \\   \ 
++     \\   \ 
++      ''  ''`,
++    String.raw`   .-.
++  (o o)
++  | O \
++   \   \
++    \\   \ 
++     \\  / 
++      ''  ''`
++  ],
++  [
++    String.raw` ~~~~~~~~
++~  .--.  ~
++~ (    ) ~
++~  '--'  ~
++ ~~~~~~~~`,
++    String.raw` ~~~~~~~~
++~  .--.  ~
++~ ( .. ) ~
++~  '--'  ~
++ ~~~~~~~~`,
++    String.raw` ~~~~~~~~
++~  .--.  ~
++~ ( oo ) ~
++~  '--'  ~
++ ~~~~~~~~`
++  ]
++];
+ 
+-module.exports = {
+-    title: "Lemegeton: The Journey to Apotheosis",
+-    startRoom: "cottage",
+-    rooms: [
+-        {
+-            id: "cottage",
+-            name: "Your Mother's Cottage",
+-            description: "Your mother's cottage is quite cozy.",
+-            exits: {
+-                garden: "garden"
+-            },
+-            characters: ["mother"]
+-        },
+-        {
+-            id: "garden",
+-            name: "The Garden",
+-            description: "A garden near mother's cottage, smells like flowers and berries."
+-        }
+-    ],
+-    characters: [
+-        {
+-            id: "mother",
+-            name: "Loving Mother",
+-            description: "A kind and religious woman who cares deeply for her twins, Deo and Dominique.",
+-            talk: (state, engine) => {
+-                engine.printLine("Mother: 'Be careful in the garden, children. Stay where I can see you.'");
+-            }
++const ACTION_ANIMATIONS = [
++  [
++    String.raw`  /\
++ /  \\
++| !! |
++ \  /
++  \/`,
++    String.raw`  /\\
++ / !!\\
++| !!!!|
++ \ !!/
++  \\/`,
++    String.raw`  /\
++ / **\\
++| ****|
++ \ **/
++  \/`
++  ],
++  [
++    String.raw`[>      ]`,
++    String.raw`[>>     ]`,
++    String.raw`[ >>>   ]`,
++    String.raw`[  >>>> ]`
++  ]
++];
++
++function createCommandAnimationTemplate({
++  idleAnimations,
++  actionAnimations,
++  excludedCommands = ['look'],
++  actionCommands = ['go', 'move', 'take', 'drop', 'use', 'talk', 'say', 'north', 'south', 'east', 'west', 'n', 's', 'e', 'w']
++}) {
++  const excluded = new Set(excludedCommands.map((cmd) => cmd.toLowerCase()));
++  const action = new Set(actionCommands.map((cmd) => cmd.toLowerCase()));
++
++  function initAnimationState(engine) {
++    if (!engine.state.variables.__animationTemplate) {
++      engine.state.variables.__animationTemplate = {
++        idleIndex: 0,
++        actionIndex: 0
++      };
++    }
++    return engine.state.variables.__animationTemplate;
++  }
++
++  function getMode(commandName) {
++    return action.has(commandName) ? 'action' : 'idle';
++  }
++
++  function nextAnimation(engine, mode) {
++    const templateState = initAnimationState(engine);
++    if (mode === 'action') {
++      const frame = actionAnimations[templateState.actionIndex % actionAnimations.length];
++      templateState.actionIndex += 1;
++      return frame;
++    }
++
++    const frame = idleAnimations[templateState.idleIndex % idleAnimations.length];
++    templateState.idleIndex += 1;
++    return frame;
++  }
++
++  function play(engine, commandName) {
++    if (excluded.has(commandName)) {
++      return;
++    }
++
++    const mode = getMode(commandName);
++    const animationFrames = nextAnimation(engine, mode);
++
++    if (!animationFrames || !animationFrames.length) {
++      return;
++    }
++
++    engine.stopAllAnimations();
++    engine.printImg(animationFrames);
++    engine.printLine(`{{cyan}}[${mode.toUpperCase()} ANIMATION]{{color_reset}}`, true);
++  }
++
++  function install(engine) {
++    if (engine.state.flags.commandAnimationTemplateInstalled) {
++      return;
++    }
++
++    for (const [commandName, commandConfig] of engine.world.commands) {
++      const originalFn = commandConfig.fn;
++      engine.world.commands.set(commandName, {
++        ...commandConfig,
++        fn(args, activeEngine) {
++          const result = originalFn.call(this, args, activeEngine);
++          play(activeEngine, commandName);
++          return result;
+         }
+-    ]
+-}
+\ No newline at end of file
++      });
++    }
++
++    engine.state.flags.commandAnimationTemplateInstalled = true;
++  }
++
++  return {
++    install,
++    play,
++    nextAnimation,
++    getMode
++  };
++}
++
++const commandAnimationTemplate = createCommandAnimationTemplate({
++  idleAnimations: IDLE_ANIMATIONS,
++  actionAnimations: ACTION_ANIMATIONS,
++  excludedCommands: ['look']
++});
++
++module.exports = {
++  title: 'Lemegeton: Animation Template Demo',
++  startRoom: 'atrium',
++  rooms: [
++    {
++      id: 'atrium',
++      name: '{{bold}}Atrium{{font_reset}}',
++      description: 'A ritual atrium filled with humming glyphs. Try commands like {{yellow}}help{{color_reset}}, {{yellow}}go north{{color_reset}}, {{yellow}}take sigil{{color_reset}}, and {{yellow}}look{{color_reset}} to preview the animation template behavior.',
++      exits: {
++        north: 'sanctum'
++      },
++      items: ['sigil'],
++      onEnter: (state, engine) => {
++        commandAnimationTemplate.install(engine);
++      }
++    },
++    {
++      id: 'sanctum',
++      name: '{{bold}}Sanctum{{font_reset}}',
++      description: 'A quiet sanctum where idle effects continue between actions.',
++      exits: {
++        south: 'atrium'
++      }
++    }
++  ],
++  items: [
++    {
++      id: 'sigil',
++      name: 'metal sigil seal',
++      takeable: true,
++      description: 'A metal sigil that pulses whenever action animations trigger.',
++      use: (state, engine) => {
++        engine.printLine('The sigil resonates with your command flow.');
++        return true;
++      }
++    }
++  ]
++};
