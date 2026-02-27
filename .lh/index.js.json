@@ -1,0 +1,22 @@
+{
+    "sourceFile": "index.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1772144153150,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1772144160578,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,8 @@\n-const LORE = require('./node_modules/lorejs/lore.js');\n+const LORE = require(\"./node_modules/lorejs/lore.js\");\n const game = new LORE.Game();\n \n // Load the game\n-game.loadNovel(lemegeton).then(() => {\n-});\n+game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\n+\n+// Start the game\n+game.start();\n"
+                }
+            ],
+            "date": 1772144153150,
+            "name": "Commit-0",
+            "content": "const LORE = require('./node_modules/lorejs/lore.js');\nconst game = new LORE.Game();\n\n// Load the game\ngame.loadNovel(lemegeton).then(() => {\n});\n"
+        }
+    ]
+}

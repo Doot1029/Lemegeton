@@ -1,234 +1,232 @@
-diff --git a/node_modules/lorejs/games/lemegeton.js b/node_modules/lorejs/games/lemegeton.js
-index fe3b5a0a2991aa6b3a2e25fb2c6e5d05776b11cf..eb28f82210bda0a35415dcf506f6d6aa73bd050e 100644
---- a/node_modules/lorejs/games/lemegeton.js
-+++ b/node_modules/lorejs/games/lemegeton.js
-@@ -1,36 +1,194 @@
--let state = {
--    day: 1,
--    weekday: "saturn",
--    hour: "saturn"
--};
-+const IDLE_ANIMATIONS = [
-+  [
-+    String.raw`   .-.
-+  (o o)
-+  | O \
-+   \   \
-+    \\   \ 
-+     \\   \ 
-+      ''  ''`,
-+    String.raw`   .-.
-+  (o o)
-+  | O \
-+   \   \
-+    \\   \ 
-+     \\   \ 
-+      ''  ''`,
-+    String.raw`   .-.
-+  (o o)
-+  | O \
-+   \   \
-+    \\   \ 
-+     \\  / 
-+      ''  ''`
-+  ],
-+  [
-+    String.raw` ~~~~~~~~
-+~  .--.  ~
-+~ (    ) ~
-+~  '--'  ~
-+ ~~~~~~~~`,
-+    String.raw` ~~~~~~~~
-+~  .--.  ~
-+~ ( .. ) ~
-+~  '--'  ~
-+ ~~~~~~~~`,
-+    String.raw` ~~~~~~~~
-+~  .--.  ~
-+~ ( oo ) ~
-+~  '--'  ~
-+ ~~~~~~~~`
-+  ]
-+];
- 
--module.exports = {
--    title: "Lemegeton: The Journey to Apotheosis",
--    startRoom: "cottage",
--    rooms: [
--        {
--            id: "cottage",
--            name: "Your Mother's Cottage",
--            description: "Your mother's cottage is quite cozy.",
--            exits: {
--                garden: "garden"
--            },
--            characters: ["mother"]
--        },
--        {
--            id: "garden",
--            name: "The Garden",
--            description: "A garden near mother's cottage, smells like flowers and berries."
--        }
--    ],
--    characters: [
--        {
--            id: "mother",
--            name: "Loving Mother",
--            description: "A kind and religious woman who cares deeply for her twins, Deo and Dominique.",
--            talk: (state, engine) => {
--                engine.printLine("Mother: 'Be careful in the garden, children. Stay where I can see you.'");
--            }
-+const ACTION_ANIMATIONS = [
-+  [
-+    String.raw`  /\
-+ /  \\
-+| !! |
-+ \  /
-+  \/`,
-+    String.raw`  /\\
-+ / !!\\
-+| !!!!|
-+ \ !!/
-+  \\/`,
-+    String.raw`  /\
-+ / **\\
-+| ****|
-+ \ **/
-+  \/`
-+  ],
-+  [
-+    String.raw`[>      ]`,
-+    String.raw`[>>     ]`,
-+    String.raw`[ >>>   ]`,
-+    String.raw`[  >>>> ]`
-+  ]
-+];
-+
-+function createCommandAnimationTemplate({
-+  idleAnimations,
-+  actionAnimations,
-+  excludedCommands = ['look'],
-+  actionCommands = ['go', 'move', 'take', 'drop', 'use', 'talk', 'say', 'north', 'south', 'east', 'west', 'n', 's', 'e', 'w']
-+}) {
-+  const excluded = new Set(excludedCommands.map((cmd) => cmd.toLowerCase()));
-+  const action = new Set(actionCommands.map((cmd) => cmd.toLowerCase()));
-+
-+  function initAnimationState(engine) {
-+    if (!engine.state.variables.__animationTemplate) {
-+      engine.state.variables.__animationTemplate = {
-+        idleIndex: 0,
-+        actionIndex: 0
-+      };
-+    }
-+    return engine.state.variables.__animationTemplate;
-+  }
-+
-+  function getMode(commandName) {
-+    return action.has(commandName) ? 'action' : 'idle';
-+  }
-+
-+  function nextAnimation(engine, mode) {
-+    const templateState = initAnimationState(engine);
-+    if (mode === 'action') {
-+      const frame = actionAnimations[templateState.actionIndex % actionAnimations.length];
-+      templateState.actionIndex += 1;
-+      return frame;
-+    }
-+
-+    const frame = idleAnimations[templateState.idleIndex % idleAnimations.length];
-+    templateState.idleIndex += 1;
-+    return frame;
-+  }
-+
-+  function play(engine, commandName) {
-+    if (excluded.has(commandName)) {
-+      return;
-+    }
-+
-+    const mode = getMode(commandName);
-+    const animationFrames = nextAnimation(engine, mode);
-+
-+    if (!animationFrames || !animationFrames.length) {
-+      return;
-+    }
-+
-+    engine.stopAllAnimations();
-+    engine.printImg(animationFrames);
-+    engine.printLine(`{{cyan}}[${mode.toUpperCase()} ANIMATION]{{color_reset}}`, true);
-+  }
-+
-+  function install(engine) {
-+    if (engine.state.flags.commandAnimationTemplateInstalled) {
-+      return;
-+    }
-+
-+    for (const [commandName, commandConfig] of engine.world.commands) {
-+      const originalFn = commandConfig.fn;
-+      engine.world.commands.set(commandName, {
-+        ...commandConfig,
-+        fn(args, activeEngine) {
-+          const result = originalFn.call(this, args, activeEngine);
-+          play(activeEngine, commandName);
-+          return result;
+diff --git a/index.html b/index.html
+index 61b7498847bc2da3fd311a4dada75993f7375d82..4c72de93dcbec977760d48aab80d421649d20cb9 100644
+--- a/index.html
++++ b/index.html
+@@ -41,93 +41,215 @@
+             padding: 10px !important;
+             width: 100% !important;
+             height: 100% !important;
+             position: relative !important;
+             font-family: 'silver', sans-serif !important;
+             font-size: 2.5rem !important;
          }
--    ]
--}
-\ No newline at end of file
-+      });
-+    }
+         .lore-input {
+             font-family: 'silver', sans-serif !important;
+             color: #ffb000 !important;
+             background: transparent !important;
+             border: none !important;
+             outline: none !important;
+             font-size: 2.5rem !important;
+             cursor: url('text-cursor.png'), auto !important;
+             user-select: text !important;
+         }
+         .lore-output {
+             height: calc(100% - 60px) !important;
+         }
+         #game-container {
+             position: relative;
+             height: 600px;
+             width: 1100px;
+         }
++        .workspace-layout {
++            height: 100%;
++            width: 100%;
++            display: flex;
++            gap: 20px;
++            align-items: stretch;
++        }
++        .terminal-wrapper {
++            flex: 1;
++            min-width: 0;
++        }
+         .psone-window {
+             height: 100%;
+             width: 100%;
+             display: flex;
+             flex-direction: column;
+         }
+         .psone-content {
+             flex: 1;
+             overflow: hidden;
+         }
+         .status-panel {
+             border: 2px solid #fff;
+             border-radius: 10px;
+             background: linear-gradient(#0D2289, #06093B);
+             box-shadow: inset 0 0 15px rgba(255, 176, 0, 0.25);
+             color: #ffb000;
+             font-family: 'dungeon mode', monospace;
+             font-size: 1.8rem;
+             line-height: 1;
+             padding: 10px;
+             white-space: pre;
+             align-self: auto;
+             cursor: default;
+             user-select: text;
+         }
++        .graphics-window {
++            width: 420px;
++            height: 420px;
++            border: 3px solid #fff;
++            border-radius: 12px;
++            background: linear-gradient(#0D2289, #06093B);
++            box-shadow: inset 0 0 20px rgba(255, 176, 0, 0.25), 0 0 14px rgba(13, 34, 137, 0.6);
++            display: flex;
++            flex-direction: column;
++            padding: 14px;
++            cursor: default;
++        }
++        .graphics-window h2 {
++            margin: 0 0 12px;
++            color: #ffb000;
++            font-family: 'silver', sans-serif;
++            font-size: 1.5rem;
++            text-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
++        }
++        .graphics-display {
++            flex: 1;
++            border: 2px solid rgba(255,255,255,0.8);
++            border-radius: 8px;
++            overflow: hidden;
++            background: #03071f;
++            display: flex;
++            align-items: center;
++            justify-content: center;
++        }
++        .graphics-display img {
++            width: 100%;
++            height: 100%;
++            object-fit: cover;
++            image-rendering: pixelated;
++        }
++        .animation-status {
++            margin-top: 12px;
++            border: 2px solid rgba(255,255,255,0.8);
++            border-radius: 6px;
++            background: rgba(0,0,0,0.35);
++            color: #ffcf54;
++            font-family: 'dungeon mode', monospace;
++            font-size: 2rem;
++            line-height: 1;
++            padding: 10px;
++            min-height: 48px;
++            letter-spacing: 1px;
++            text-transform: uppercase;
++        }
+ 
+         .text-cursor {
+             cursor: text !important;
+         }
+         .select-cursor {
+             cursor: default !important;
+             user-select: text;
+         }
+         /* Make Dungeon Mode larger */
+         span[style*="dungeon mode"] {
+             font-size: 0.5em;
+         }
+     </style>
+ </head>
+ <body>
+     <div id="game-container">
+-        <div class="container psone-window">
+-            <label class="title">Lemegeton: Apotheosis OS v1.0</label>
+-            <div class="psone-content" id="lore-mount">
+-                <!-- LoreJS terminal will be appended here -->
++        <div class="workspace-layout">
++            <div class="container psone-window terminal-wrapper">
++                <label class="title">Lemegeton: Apotheosis OS v1.0</label>
++                <div class="psone-content" id="lore-mount">
++                    <!-- LoreJS terminal will be appended here -->
++                </div>
+             </div>
++            <aside class="graphics-window" aria-live="polite">
++                <h2>Graphics Window</h2>
++                <div class="graphics-display">
++                    <img id="animation-image" src="uDNhMX.jpg" alt="Idle animation frame" />
++                </div>
++                <div class="animation-status" id="animation-status">IDLE // STABLE</div>
++            </aside>
+         </div>
+     </div>
+     <script src="node_modules/lorejs/lore.js"></script>
+     <script>
+-        // Set up the game
+         const game = new LORE.Game();
+-        
+-        // Ensure the terminal is inside our container
+-        window.addEventListener('DOMContentLoaded', () => {
++        const idleFrames = ['uDNhMX.jpg', '5nhE7U.jpg', 'E1DM1j.jpg'];
++        const actionFrames = ['hTJZHb.jpg', '+syNvi.png', 'yurWRm.png'];
++        const actionCommands = new Set(['go', 'move', 'take', 'drop', 'use', 'talk', 'say', 'north', 'south', 'east', 'west', 'n', 's', 'e', 'w']);
++        const animationImage = document.getElementById('animation-image');
++        const animationStatus = document.getElementById('animation-status');
++        let idleIndex = 0;
++        let actionIndex = 0;
 +
-+    engine.state.flags.commandAnimationTemplateInstalled = true;
-+  }
++        function renderGraphics(mode, commandName = 'standby') {
++            if (mode === 'action') {
++                const nextFrame = actionFrames[actionIndex % actionFrames.length];
++                actionIndex += 1;
++                animationImage.src = nextFrame;
++                animationImage.alt = 'Action animation frame';
++                animationStatus.textContent = `ACTION // ${commandName}`;
++                return;
++            }
 +
-+  return {
-+    install,
-+    play,
-+    nextAnimation,
-+    getMode
-+  };
-+}
++            const nextFrame = idleFrames[idleIndex % idleFrames.length];
++            idleIndex += 1;
++            animationImage.src = nextFrame;
++            animationImage.alt = 'Idle animation frame';
++            animationStatus.textContent = 'IDLE // STABLE';
++        }
 +
-+const commandAnimationTemplate = createCommandAnimationTemplate({
-+  idleAnimations: IDLE_ANIMATIONS,
-+  actionAnimations: ACTION_ANIMATIONS,
-+  excludedCommands: ['look']
-+});
++        function attachTerminalToMount() {
+             const terminal = document.querySelector('.lore-terminal');
+-            if (terminal) {
+-                const container = document.getElementById('lore-mount');
++            const container = document.getElementById('lore-mount');
++            if (terminal && terminal.parentElement !== container) {
+                 container.appendChild(terminal);
+             }
++        }
 +
-+module.exports = {
-+  title: 'Lemegeton: Animation Template Demo',
-+  startRoom: 'atrium',
-+  rooms: [
-+    {
-+      id: 'atrium',
-+      name: '{{bold}}Atrium{{font_reset}}',
-+      description: 'A ritual atrium filled with humming glyphs. Try commands like {{yellow}}help{{color_reset}}, {{yellow}}go north{{color_reset}}, {{yellow}}take sigil{{color_reset}}, and {{yellow}}look{{color_reset}} to preview the animation template behavior.',
-+      exits: {
-+        north: 'sanctum'
-+      },
-+      items: ['sigil'],
-+      onEnter: (state, engine) => {
-+        commandAnimationTemplate.install(engine);
-+      }
-+    },
-+    {
-+      id: 'sanctum',
-+      name: '{{bold}}Sanctum{{font_reset}}',
-+      description: 'A quiet sanctum where idle effects continue between actions.',
-+      exits: {
-+        south: 'atrium'
-+      }
-+    }
-+  ],
-+  items: [
-+    {
-+      id: 'sigil',
-+      name: 'metal sigil seal',
-+      takeable: true,
-+      description: 'A metal sigil that pulses whenever action animations trigger.',
-+      use: (state, engine) => {
-+        engine.printLine('The sigil resonates with your command flow.');
-+        return true;
-+      }
-+    }
-+  ]
-+};
++        function bindCommandListener() {
++            const input = document.querySelector('.lore-input');
++            if (!input || input.dataset.graphicsBound === 'true') {
++                return;
++            }
++
++            input.dataset.graphicsBound = 'true';
++            input.addEventListener('keydown', (event) => {
++                if (event.key !== 'Enter') {
++                    return;
++                }
++
++                const [commandName] = input.value.trim().toLowerCase().split(/\s+/);
++                if (!commandName) {
++                    renderGraphics('idle');
++                    return;
++                }
++
++                if (actionCommands.has(commandName)) {
++                    renderGraphics('action', commandName);
++                } else {
++                    renderGraphics('idle');
++                }
++            });
++        }
++
++        window.addEventListener('DOMContentLoaded', () => {
+             game.loadNovel('node_modules/lorejs/games/lemegeton.js').then(() => {
+-                // Game starts automatically inside loadNovel
++                attachTerminalToMount();
++                bindCommandListener();
++                renderGraphics('idle');
++                setInterval(() => renderGraphics('idle'), 5000);
+             });
+         });
+     </script>
+ </body>
+ </html>
+-

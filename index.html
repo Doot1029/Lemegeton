@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lemegeton: The Journey to Apotheosis</title>
     <!-- PSone.css -->
     <link rel="stylesheet" href="PSone.css/PSone.min.css">
     <style>
@@ -16,14 +15,11 @@
             src: url('Silver.ttf');
         }
         @font-face {
-          font-family: 'rational tw display';
-          src: url('RationalTWDisplay.tff');
+            font-family: 'infernal script';
+            src: url('InfernalScript.ttf');
         }
-
         body {
             background-color: #000000;
-            margin: 0;
-            padding: 0;
             height: 100vh;
             display: flex;
             align-items: center;
@@ -34,16 +30,37 @@
         }
         /* Style Lore terminal to fit inside PSone container */
         .lore-terminal {
-            background: linear-gradient(#0D2289, #06093B) !important;
+            background: transparent !important;
             color: #ffb000 !important;
             text-shadow: 0 0 5px rgba(255, 176, 0, 0.7) !important;
             box-shadow: none !important;
-            padding: 10px !important;
+            padding: 40px !important;
             width: 100% !important;
             height: 100% !important;
             position: relative !important;
+            display: flex !important;
+            flex-direction: column !important;
             font-family: 'silver', sans-serif !important;
             font-size: 2.5rem !important;
+            border: none !important;
+            border-radius: 10px;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+            image-rendering: pixelated;  
+        }
+        .lore-output {
+            flex: 1 !important;
+            height: auto !important;
+            line-height: 1.2;
+            overflow-y: auto !important;
+            margin-bottom: 10px !important;
+        }
+        .lore-input-container {
+            display: flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
         }
         .lore-input {
             font-family: 'silver', sans-serif !important;
@@ -54,41 +71,62 @@
             font-size: 2.5rem !important;
             cursor: url('text-cursor.png'), auto !important;
             user-select: text !important;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+            flex: 1 !important;
         }
-        .lore-output {
-            height: calc(100% - 60px) !important;
-        }
-        #game-container {
-            position: relative;
-            height: 600px;
-            width: 1100px;
-        }
-        .psone-window {
-            height: 100%;
+        .graphics-window {
             width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            max-height: 95vh;
+            position: relative;
+            background: linear-gradient(#0D2289, #6b1291);
+            box-shadow: inset 0 0 20px rgba(255, 176, 0, 0.25), 0 0 14px rgba(13, 34, 137, 0.6);
+            display: flex;
+            flex-direction: row;
+            cursor: url('cursor.png');
+            box-sizing: border-box;
+            overflow: hidden;
+            border: 4px solid #fff;
+            border-radius: 8px;
+            margin: 10px;
+        }
+        .vertical-line {
+            width: 3px;
+            background-color: rgba(255, 255, 255, 0.5);
+            height: 100%;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+        #terminal-window {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            min-height: 400px;
+        }
+        #info-panel {
+            width: 350px;
+            height: 100%;
+            padding: 40px 20px;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
         }
-        .psone-content {
-            flex: 1;
-            overflow: hidden;
-        }
-        .status-panel {
-            border: 2px solid #fff;
-            border-radius: 10px;
-            background: linear-gradient(#0D2289, #06093B);
-            box-shadow: inset 0 0 15px rgba(255, 176, 0, 0.25);
+        .info-title {
+            font-family: 'dungeon mode';
             color: #ffb000;
-            font-family: 'dungeon mode', monospace;
-            font-size: 1.8rem;
-            line-height: 1;
-            padding: 10px;
-            white-space: pre;
-            align-self: auto;
-            cursor: default;
-            user-select: text;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px rgba(255, 176, 0, 0.5);
         }
-
+        .info-content {
+            font-family: 'silver';
+            color: #fff;
+            font-size: 1.8rem;
+            line-height: 1.4;
+        }
         .text-cursor {
             cursor: text !important;
         }
@@ -100,34 +138,90 @@
         span[style*="dungeon mode"] {
             font-size: 0.5em;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow-y: auto;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            .graphics-window {
+                flex-direction: column;
+                height: auto;
+                max-height: none;
+                margin: 0;
+            }
+            #terminal-window {
+                height: 50vh;
+                min-height: 300px;
+                width: 100%;
+            }
+            .vertical-line {
+                width: 100%;
+                height: 3px;
+            }
+            #info-panel {
+                width: 100%;
+                height: auto;
+                padding: 20px;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .lore-terminal, .lore-input {
+                font-size: 1.5rem !important;
+                padding: 20px !important;
+            }
+            .info-title {
+                font-size: 1.5rem;
+            }
+            .info-content {
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <div class="container psone-window">
-            <label class="title">Lemegeton: Apotheosis OS v1.0</label>
-            <div class="psone-content" id="lore-mount">
-                <!-- LoreJS terminal will be appended here -->
-            </div>
+  <aside class="graphics-window">
+    <div id="terminal-window"></div>
+    <div class="vertical-line"></div>
+    <div id="info-panel">
+        <div class="info-title">Lemegeton</div>
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 10px 0;">
+        <div class="info-content">
+            <p>Subject: Lemegeton</p>
+            <p>Status: <span style="color: #00ff00;">Connected</span></p>
+            <p style="margin-top: 20px; font-size: 1.4rem; color: rgba(255, 255, 255, 0.6);">
+                "The split between worlds is but a thin line."
+            </p>
         </div>
     </div>
     <script src="node_modules/lorejs/lore.js"></script>
     <script>
-        // Set up the game
-        const game = new LORE.Game();
-        
-        // Ensure the terminal is inside our container
-        window.addEventListener('DOMContentLoaded', () => {
-            const terminal = document.querySelector('.lore-terminal');
-            if (terminal) {
-                const container = document.getElementById('lore-mount');
-                container.appendChild(terminal);
-            }
-            game.loadNovel('node_modules/lorejs/games/lemegeton.js').then(() => {
-                // Game starts automatically inside loadNovel
-            });
-        });
+      const game = new LORE.Game();
+
+      function attachTerminalToMount() {
+        const terminal = document.querySelector('.lore-terminal');
+        const mount = document.getElementById('terminal-window');
+        if (terminal && mount) {
+          mount.appendChild(terminal);
+          terminal.style.position = 'relative';
+          terminal.style.width = '100%';
+          terminal.style.height = '100%';
+          terminal.style.top = '0';
+          terminal.style.left = '0';
+        } else {
+          // If terminal not found, try again shortly
+          setTimeout(attachTerminalToMount, 50);
+        }
+      }
+
+      attachTerminalToMount();
+
+      game.loadNovel("./node_modules/lorejs/games/lemegeton.js");
     </script>
+  </aside>
 </body>
 </html>
-
