@@ -24,6 +24,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0;
+            padding: 0;
             overflow: hidden;
             color: #fff;
             cursor: url('cursor.png'), auto;
@@ -34,7 +36,7 @@
             color: #ffb000 !important;
             text-shadow: 0 0 5px rgba(255, 176, 0, 0.7) !important;
             box-shadow: none !important;
-            padding: 40px !important;
+            padding: 20px !important;
             width: 100% !important;
             height: 100% !important;
             position: relative !important;
@@ -43,7 +45,7 @@
             font-family: 'silver', sans-serif !important;
             font-size: 2.5rem !important;
             border: none !important;
-            border-radius: 10px;
+            border-radius: 0;
             overflow: hidden !important;
             box-sizing: border-box !important;
             -webkit-font-smoothing: none;
@@ -76,42 +78,99 @@
             flex: 1 !important;
         }
         .graphics-window {
-            width: 100%;
-            max-width: 1200px;
-            height: 800px;
-            max-height: 95vh;
+            width: 100vw;
+            height: 100vh;
             position: relative;
             background: linear-gradient(#0D2289, #6b1291);
-            box-shadow: inset 0 0 20px rgba(255, 176, 0, 0.25), 0 0 14px rgba(13, 34, 137, 0.6);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: row;
             cursor: url('cursor.png');
             box-sizing: border-box;
             overflow: hidden;
-            border: 4px solid #fff;
-            border-radius: 8px;
-            margin: 10px;
+            margin: 0;
+            border: none;
+            border-radius: 0;
+            filter: url('#crt-curvature');
+        }
+        /* CRT Shadow Mask Filter */
+        .graphics-window::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: 
+                /* Scanlines */
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                /* Phosphor Mask (Aperture Grille/Shadow Mask simulation) */
+                linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.03), rgba(0, 0, 255, 0.05));
+            z-index: 100;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+        .graphics-window::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            /* Vignette and Subtle Curve simulation */
+            background: 
+                radial-gradient(circle at center, rgba(18, 16, 16, 0) 40%, rgba(0, 0, 0, 0.4) 100%),
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            z-index: 101;
+            background-size: 100% 100%, 100% 4px;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+        @keyframes flicker {
+            0% { opacity: 0.98; }
+            5% { opacity: 0.99; }
+            10% { opacity: 0.97; }
+            15% { opacity: 0.98; }
+            20% { opacity: 0.99; }
+            25% { opacity: 0.98; }
+            30% { opacity: 0.97; }
+            35% { opacity: 0.99; }
+            40% { opacity: 0.98; }
+            45% { opacity: 0.97; }
+            50% { opacity: 0.99; }
+            55% { opacity: 0.98; }
+            60% { opacity: 0.97; }
+            65% { opacity: 0.99; }
+            70% { opacity: 0.98; }
+            75% { opacity: 0.97; }
+            80% { opacity: 0.99; }
+            85% { opacity: 0.98; }
+            90% { opacity: 0.97; }
+            95% { opacity: 0.99; }
+            100% { opacity: 0.98; }
         }
         .vertical-line {
             width: 3px;
-            background-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.3);
             height: 100%;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
         }
         #terminal-window {
             flex: 1;
             height: 100%;
             position: relative;
-            min-height: 400px;
         }
         #info-panel {
-            width: 350px;
+            width: 400px;
             height: 100%;
-            padding: 40px 20px;
+            padding: 60px 30px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.1);
             overflow-y: auto;
         }
         .info-title {
@@ -142,37 +201,33 @@
         /* Responsive Styles */
         @media (max-width: 768px) {
             body {
-                height: auto;
-                min-height: 100vh;
-                overflow-y: auto;
-                padding: 10px;
-                box-sizing: border-box;
+                height: 100vh;
+                overflow: hidden;
             }
             .graphics-window {
                 flex-direction: column;
-                height: auto;
-                max-height: none;
-                margin: 0;
+                height: 100vh;
+                width: 100vw;
             }
             #terminal-window {
-                height: 50vh;
-                min-height: 300px;
+                height: 60vh;
                 width: 100%;
             }
             .vertical-line {
                 width: 100%;
-                height: 3px;
+                height: 2px;
+                background-color: rgba(255, 255, 255, 0.2);
             }
             #info-panel {
                 width: 100%;
-                height: auto;
+                flex: 1;
                 padding: 20px;
                 border-left: none;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                border-top: 2px solid rgba(255, 255, 255, 0.2);
             }
             .lore-terminal, .lore-input {
-                font-size: 1.5rem !important;
-                padding: 20px !important;
+                font-size: 1.8rem !important;
+                padding: 10px !important;
             }
             .info-title {
                 font-size: 1.5rem;
@@ -223,5 +278,20 @@
       game.loadNovel("./node_modules/lorejs/games/lemegeton.js");
     </script>
   </aside>
+  <svg width="0" height="0" style="position: absolute;">
+    <filter id="crt-curvature">
+      <!-- Slight blur for phosphor bloom -->
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="blur" />
+      <feComponentTransfer in="blur" result="glow">
+        <feFuncR type="linear" slope="1.1" />
+        <feFuncG type="linear" slope="1.1" />
+        <feFuncB type="linear" slope="1.1" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="glow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </svg>
 </body>
 </html>
