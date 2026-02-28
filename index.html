@@ -103,7 +103,7 @@
             width: 100vw;
             height: 100vh;
             position: relative;
-            background: linear-gradient(#3c3c3c, #262626);
+            background: linear-gradient(#a20000, #262626);
             box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: row;
@@ -136,16 +136,17 @@
         #rpg-graphics {
             flex: 2;
             width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            overflow: auto;
             border-bottom: 2px solid rgba(255, 255, 255, 0.2);
             font-family: 'cp437', 'chunky', 'ursafont', monospace;
             white-space: pre;
             color: #ffb000;
             text-shadow: 0 0 10px currentColor;
             line-height: 1.1;
+            padding: 20px;
+            box-sizing: border-box;
+            display: block;
+            text-align: center;
         }
         #rpg-dialog {
             flex: 1;
@@ -308,12 +309,12 @@
 
       attachTerminalToMount();
 
-      game.loadNovel("./node_modules/lorejs/games/lemegeton.js");
-      
-      // Start in ASCII mode
-      setTimeout(() => {
-        if (window.setGameMode) window.setGameMode('ascii');
-      }, 500);
+      game.loadNovel("./node_modules/lorejs/games/lemegeton.js").then(() => {
+        // Start in ASCII mode after novel is loaded
+        setTimeout(() => {
+          if (window.setGameMode) window.setGameMode('ascii');
+        }, 100);
+      });
 
       // Mode management
       window.setGameMode = function(mode) {
@@ -330,8 +331,8 @@
 
       // ASCII Animation Logic
       let asciiInterval = null;
-      let frame = 0;
       const graphicsEl = document.getElementById('rpg-graphics');
+      let lastAsciiRoom = null;
       
       function startAsciiAnimation() {
         if (asciiInterval) return;
@@ -342,53 +343,32 @@
         if (asciiInterval) {
           cancelAnimationFrame(asciiInterval);
           asciiInterval = null;
+          lastAsciiRoom = null;
         }
       }
 
       function animateAscii() {
-        frame++;
-        
-        const currentRoom = game.engine.world.rooms.get(game.engine.state.currentRoom);
-        if (currentRoom && currentRoom.asciiArt) {
-          graphicsEl.innerHTML = currentRoom.asciiArt;
-          asciiInterval = requestAnimationFrame(animateAscii);
-          return;
-        }
-
-        // Simple procedural landscape for demonstration
-        const width = 60;
-        const height = 15;
-        let output = "";
-        
-        for (let y = 0; y < height; y++) {
-          for (let x = 0; x < width; x++) {
-            const wave = Math.sin(x * 0.2 + frame * 0.1) * 2 + 8;
-            if (y > wave) {
-              // Terrain
-              const chars = ["#", "X", "m", "w"];
-              output += chars[Math.floor(Math.random() * chars.length)];
-            } else if (y > wave - 1) {
-              // Surface
-              output += "~";
-            } else if (x === 10 + Math.floor(Math.sin(frame * 0.05) * 5) && y === 5) {
-                // Moving character
-                output += "@";
+        if (game.state && game.state.currentRoom) {
+          if (game.state.currentRoom !== lastAsciiRoom) {
+            const currentRoom = game.world.rooms.get(game.state.currentRoom);
+            if (currentRoom && currentRoom.asciiArt) {
+              graphicsEl.textContent = currentRoom.asciiArt;
             } else {
-              // Sky
-              if (Math.random() > 0.99) output += "*";
-              else output += " ";
+              graphicsEl.textContent = "";
             }
+            lastAsciiRoom = game.state.currentRoom;
           }
-          output += "\n";
+        } else if (lastAsciiRoom !== null) {
+          graphicsEl.innerHTML = "";
+          lastAsciiRoom = null;
         }
         
-        graphicsEl.textContent = output;
         asciiInterval = requestAnimationFrame(animateAscii);
       }
 
       // Intercept Lore print to redirect to RPG dialog if in ASCII mode
-      const originalPrintLine = LORE.Engine.prototype.printLine;
-      LORE.Engine.prototype.printLine = function(text, options) {
+      const originalPrintLine = LORE.Game.prototype.printLine;
+      LORE.Game.prototype.printLine = function(text, options) {
         if (document.body.classList.contains('mode-ascii')) {
           const dialogEl = document.getElementById('rpg-dialog');
           const p = document.createElement('p');

@@ -14,7 +14,7 @@ const path = require('path');
         await page.goto(filePath, { waitUntil: 'networkidle' });
         
         // Wait for the game to initialize and any animations to settle
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(10000);
         
         const screenshotPath = path.resolve(__dirname, 'ai-context/images/graphics-window.png');
         await page.screenshot({ path: screenshotPath, fullPage: true });
