@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "lorejs": "^1.0.3"
+    "lorejs": "^1.0.3",
+    "playwright": "^1.58.2"
   }
 }

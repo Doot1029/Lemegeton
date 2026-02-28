@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Painter</title>
+    <style>
+        @font-face {
+            font-family: 'dungeon mode';
+            src: url('Fonts/dungeon-mode.ttf');
+        }
+        @font-face {
+            font-family: 'silver';
+            src: url('Fonts/Silver.ttf');
+        }
+        @font-face {
+            font-family: 'chunky';
+            src: url('Fonts/CHUNKY.ttf');
+        }
+        @font-face {
+            font-family: 'cp437';
+            src: url('Fonts/cp437-12x24.otf');
+        }
+        @font-face {
+            font-family: 'ursafont';
+            src: url('Fonts/UrsaFont.ttf');
+        }
+        @font-face {
+            font-family: 'ursafont-ansi';
+            src: url('Fonts/UrsaFont ANSI.ttf');
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #eee;
+            font-family: 'silver', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 20px;
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(8, 20px);
+            gap: 2px;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+
+        .color-box.selected {
+            outline: 2px solid #fff;
+        }
+
+        .char-palette {
+            display: grid;
+            grid-template-columns: repeat(16, 25px);
+            gap: 2px;
+            background: #222;
+            padding: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .char-box {
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #444;
+            cursor: pointer;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+
+        .char-box.selected {
+            background: #ffb000;
+            color: #000;
+        }
+
+        .canvas-container {
+            background: #000;
+            padding: 10px;
+            border: 2px solid #555;
+            overflow: auto;
+            max-width: 90vw;
+            max-height: 70vh;
+        }
+
+        #painter-canvas {
+            display: grid;
+            background: #000;
+            cursor: crosshair;
+        }
+
+        .cell {
+            width: 14px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            line-height: 1;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .cell.preview {
+            pointer-events: none;
+            opacity: 0.5;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        button {
+            padding: 8px 15px;
+            background: #444;
+            color: #fff;
+            border: 1px solid #666;
+            cursor: pointer;
+            font-family: 'silver';
+            font-size: 1.2rem;
+        }
+
+        button.active {
+            background: #ffb000;
+            color: #000;
+        }
+
+        select {
+            padding: 5px;
+            background: #444;
+            color: #fff;
+            font-family: 'silver';
+            font-size: 1.2rem;
+        }
+
+        textarea {
+            margin-top: 20px;
+            width: 80%;
+            height: 100px;
+            background: #222;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ASCII Art Painter</h1>
+
+    <div class="toolbar">
+        <div class="panel">
+            <label>Font:</label>
+            <select id="font-select">
+                <option value="cp437">CP437</option>
+                <option value="chunky">Chunky</option>
+                <option value="dungeon mode">Dungeon Mode</option>
+                <option value="ursafont">UrsaFont</option>
+                <option value="ursafont-ansi">UrsaFont ANSI</option>
+                <option value="infernal script">Infernal Script</option>
+            </select>
+        </div>
+
+        <div class="panel">
+            <label>Mode:</label>
+            <div style="display: flex; gap: 5px;">
+                <button id="draw-mode" class="active">Draw</button>
+                <button id="erase-mode">Eraser</button>
+                <button id="bucket-mode">Bucket</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <label>Color:</label>
+            <div class="color-palette" id="color-palette"></div>
+        </div>
+
+        <div class="panel">
+            <label>Characters:</label>
+            <div class="char-palette" id="char-palette"></div>
+        </div>
+
+        <div class="panel">
+            <label>Canvas Size:</label>
+            <div style="display: flex; gap: 5px; align-items: center;">
+                <input type="number" id="canvas-cols" value="80" min="1" max="200" style="width: 50px; background: #444; color: #fff; border: 1px solid #666;">
+                <span>x</span>
+                <input type="number" id="canvas-rows" value="40" min="1" max="200" style="width: 50px; background: #444; color: #fff; border: 1px solid #666;">
+                <button id="resize-canvas" style="padding: 2px 8px; font-size: 0.9rem;">Set</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <label>History:</label>
+            <div style="display: flex; gap: 5px;">
+                <button id="undo-btn">Undo</button>
+                <button id="redo-btn">Redo</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <label>Generator:</label>
+            <button id="generate-map">Generate Map</button>
+        </div>
+
+        <div class="panel" style="justify-content: flex-end;">
+            <button id="clear-canvas">Clear</button>
+            <button id="copy-text">Copy JSON</button>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <div id="painter-canvas"></div>
+    </div>
+
+    <textarea id="output-json" readonly placeholder="JSON Output will appear here..."></textarea>
+
+    <script>
+        const canvas = document.getElementById('painter-canvas');
+        let COLS = 80;
+        let ROWS = 40;
+        let currentColor = '#ffb000';
+        let currentChar = '█';
+        let currentMode = 'draw';
+        let isMouseDown = false;
+        let history = [];
+        let historyIndex = -1;
+
+        function saveState() {
+            const state = cells.map(cell => ({
+                char: cell.textContent,
+                color: cell.style.color,
+                font: cell.style.fontFamily
+            }));
+            
+            // If we're not at the end of the history, truncate it
+            if (historyIndex < history.length - 1) {
+                history = history.slice(0, historyIndex + 1);
+            }
+            
+            history.push(state);
+            if (history.length > 50) history.shift(); // Limit history size
+            else historyIndex++;
+            
+            updateJSON();
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                applyState(history[historyIndex]);
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                applyState(history[historyIndex]);
+            }
+        }
+
+        function applyState(state) {
+            state.forEach((s, i) => {
+                cells[i].textContent = s.char;
+                cells[i].style.color = s.color;
+                cells[i].style.fontFamily = s.font;
+            });
+            updateJSON();
+        }
+
+        const colors = [
+            '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff',
+            '#ffb000', '#808080', '#c0c0c0', '#800000', '#808000', '#008000', '#800080', '#008080'
+        ];
+
+        const fontCharacters = {
+            "cp437": "! \" # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \\ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~ \u007f   ¡ ¢ £ ¤ ¥ ¦ § ¨ © ª « ¬ \u00ad ® ¯ ° ± ² ³ ´ µ ¶ · ¹ º » ¼ ½ ¾ ¿ Ä Å Æ Ç È É Ê Ë Ì Ñ Ö Ü ß à á â ä å æ ç è é ê ë ì í î ï ð ñ ò ó ô ö ÷ ø ù ú û ü ý þ ÿ ƒ Γ Θ Σ Φ Ω α δ ε π σ τ φ ‘ ’ “ ” • ‼ ⁿ ₧ ← ↑ → ↓ ↔ ↕ ↨ ∙ √ ∞ ∟ ∩ ≈ ≡ ≤ ≥ ⌂ ⌐ ⌠ ⌡ ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ╭ ╮ ╯ ╰ ╱ ╲ ╳ ▀ ▁ ▂ ▃ ▄ ▅ ▆ ▇ █ ▉ ▊ ▋ ▌ ▍ ▎ ▏ ▐ ░ ▒ ▓ ▔ ▕ ▖ ▗ ▘ ▙ ▚ ▛ ▜ ▝ ▞ ▟ ■ ▬ ▲ ► ▼ ◄ ○ ◘ ◙ ☀ ☹ ☺ ☻ ☼ ♀ ♂ ♠ ♡ ♢ ♣ ♤ ♥ ♦ ♧ ♩ ♪ ♫ ♬ ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ ⛉ ⛊ ⛿",
+            "chunky": "! \" # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \\ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~ ¡ ¢ £ ¥ § ª « ¬ ° ± ² µ ¶ · º » ¼ ½ ¿ Ä Å Æ Ç É Ñ Ö Ü ß à á â ä å æ ç è é ê ë ì í î ï ñ ò ó ô ö ÷ ù ú û ü ÿ Ā ā Ă ă Ą ą Ć ć Ĉ ĉ Ċ ċ Č č Ď ď Đ đ Ē ē Ĕ ĕ Ė ė Ę ę Ě ě Ĝ ĝ Ğ ğ Ġ ġ Ģ ģ Ĥ ĥ Ħ ħ Ĩ ĩ Ī ī Ĭ ĭ Į į İ ı Ĳ ĳ Ĵ ĵ Ķ ķ ĸ Ĺ ĺ Ļ ļ Ľ ľ Ŀ ŀ Ł ł Ń ń Ņ ņ Ň ň ŉ Ŋ ŋ Ō ō Ŏ ŏ Ő ő Œ œ Ŕ ŕ Ŗ ŗ Ř ř Ś ś Ŝ ŝ Ş ş Š š Ţ ţ Ť ť Ŧ ŧ Ũ ũ Ū ū Ŭ ŭ Ů ů ƒ Γ Θ Σ Φ Ω α δ ε π σ τ φ • ‼ ⁿ ₧ ← ↑ → ↓ ↔ ↕ ↨ ∙ √ ∞ ∟ ∩ ≈ ≡ ≤ ≥ ⌂ ⌐ ⌠ ⌡ ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ▀ ▄ █ ▌ ▐ ░ ▒ ▓ ■ □ ▬ ▲ ► ▼ ◄ ○ ◘ ◙ ☺ ☻ ☼ ♀ ♂ ♠ ♣ ♥ ♦ ♪ ♫",
+            "dungeon mode": "! \" # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \\ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~   ¡ ¢ £ ¥ § ¨ ª « ¬ ° ± ² µ ¶ · º » ¼ ½ ¿ Ä Å Æ Ç È É Ñ Ö Ü ß à á â ä å æ ç è é ê ë ì í î ï ñ ò ó ô ö ÷ ù ú û ü ÿ Ŀ ƒ ʺ ˆ ˭ Γ Θ Σ Φ Ω α δ ε π σ τ φ † • … ‸ ‼ ‽ ⁈ ⁉ ⁿ ₧ ₲ ← ↑ → ↓ ↔ ↕ ↨ ∘ ∙ √ ∞ ∟ ∩ ∵ ∿ ≈ ≡ ≤ ≥ ⊔ ⊙ ⊡ ⊤ ⊥ ⊶ ⋒ ⋰ ⋱ ⌂ ⌐ ⌠ ⌡ ⌤ ⏺ ⒑ ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ╱ ╲ ╳ ▀ ▄ █ ▌ ▐ ░ ▒ ▓ ▖ ▗ ▘ ▙ ▛ ▜ ▝ ▟ ■ □ ▤ ▥ ▬ ▲ ► ▼ ◄ ◇ ◉ ○ ◘ ◙ ◨ ◰ ◱ ◲ ◳ ★ ☝ ☠ ☥ ☺ ☻ ☼ ♀ ♂ ♖ ♠ ♡ ♢ ♣ ♥ ♦ ♪ ♫ ⚇ ⚉ ⚱ ⚷ ⛑ ⛨ ⛶ ⛼ ✕ ⟁ ⟎ ⟏ ⧇ ⩀ ⩌ ⫙ ⬓ ⬚ ⭦ ⸙ ⸬",
+            "ursafont": "! \" # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \\ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~ ¡ ¢ £ ¥ § ª « ¬ ° ± ² µ ¶ · º » ¼ ½ ¿ Ä Å Æ Ç É Ñ Ö Ü ß à á â ä å æ ç è é ê ë ì í î ï ñ ò ó ô ö ÷ ù ú û ü ÿ ƒ Γ Θ Σ Φ Ω α δ ε π σ τ φ • ‼ ⁿ ₧ ← ↑ → ↓ ↔ ↕ ↨ ∙ √ ∞ ∟ ∩ ≈ ≡ ≤ ≥ ⌂ ⌐ ⌠ ⌡ ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ▀ ▄ █ ▌ ▐ ░ ▒ ▓ ■ □ ▬ ▲ ► ▼ ◄ ○ ◘ ◙ ☺ ☻ ☼ ♀ ♂ ♠ ♣ ♥ ♦ ♪ ♫",
+            "ursafont-ansi": "! \" # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \\ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~ ¡ ¢ £ ¥ § ª « ¬ ° ± ² µ ¶ · º » ¼ ½ ¿ Ä Å Æ Ç É Ñ Ö Ü ß à á â ä å æ ç è é ê ë ì í î ï ñ ò ó ô ö ÷ ù ú û ü ÿ ƒ Γ Θ Σ Φ Ω α δ ε π σ τ φ • ‼ ⁿ ₧ ← ↑ → ↓ ↔ ↕ ↨ ∙ √ ∞ ∟ ∩ ≈ ≡ ≤ ≥ ⌂ ⌐ ⌠ ⌡ ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ▀ ▄ █ ▌ ▐ ░ ▒ ▓ ■ □ ▬ ▲ ► ▼ ◄ ○ ◘ ◙ ☺ ☻ ☼ ♀ ♂ ♠ ♣ ♥ ♦ ♪ ♫",
+            "infernal script": " █▓▒░■□▪▫▬▭▮▯▰▱▲△▴▵▶▷▸▹►▻▼▽▾▿◀◁◂◃◄◅◆◇◈◉◊○◌◍◎●◐◑◒◓◔◕◖◗◘◙◚◛◜◝◞◟◠◡◢◣◤◥◦◧◨◩◪◫◬◭◮◯◰◱◲◳◴◵◶◷◸◹◺◻◼◽◾◿"
+        };
+
+        const charPalette = document.getElementById('char-palette');
+
+        function updateCharPalette(font) {
+            charPalette.innerHTML = '';
+            charPalette.style.fontFamily = font;
+            const characters = fontCharacters[font] || fontCharacters['cp437'];
+            
+            // Handle space separated characters if needed, or just treat as string
+            // The characters in AGENTS.MD seem to be space separated for some, but others not.
+            // Actually, looking at CP437, it has spaces between them.
+            // I'll split by space and filter out empty strings to get individual characters.
+            const charList = characters.split(' ').filter(c => c.length > 0 || c === ' ');
+            
+            // If the split results in nothing useful (e.g. no spaces), fallback to individual characters
+            const finalChars = charList.length > 1 ? charList : characters.split('');
+
+            finalChars.forEach(char => {
+                const div = document.createElement('div');
+                div.className = 'char-box';
+                div.textContent = char;
+                div.onclick = () => {
+                    document.querySelectorAll('.char-box').forEach(b => b.classList.remove('selected'));
+                    div.classList.add('selected');
+                    currentChar = char;
+                };
+                if (char === currentChar) div.classList.add('selected');
+                charPalette.appendChild(div);
+            });
+        }
+
+        // Initialize palette
+        updateCharPalette(document.getElementById('font-select').value);
+
+        // Colors
+        const colorPalette = document.getElementById('color-palette');
+        colors.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'color-box';
+            div.style.backgroundColor = c;
+            div.onclick = () => {
+                document.querySelectorAll('.color-box').forEach(b => b.classList.remove('selected'));
+                div.classList.add('selected');
+                currentColor = c;
+            };
+            if (c === currentColor) div.classList.add('selected');
+            colorPalette.appendChild(div);
+        });
+
+        let cells = [];
+
+        function initCanvas() {
+            canvas.innerHTML = '';
+            canvas.style.gridTemplateColumns = `repeat(${COLS}, 14px)`;
+            cells = [];
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    cell.onmousedown = (e) => { 
+                        e.preventDefault(); 
+                        isMouseDown = true; 
+                        handleAction(r, c); 
+                    };
+                    
+                    cell.onmouseenter = () => { 
+                        updatePreview(cell);
+                        if (isMouseDown && currentMode !== 'bucket') handleAction(r, c); 
+                    };
+
+                    cell.onmouseleave = () => {
+                        clearPreview(cell);
+                    };
+
+                    canvas.appendChild(cell);
+                    cells.push(cell);
+                }
+            }
+            saveState(); // Initial state
+        }
+
+        function updatePreview(cell) {
+            if (currentMode === 'draw') {
+                cell.classList.add('preview');
+                cell.dataset.oldText = cell.textContent;
+                cell.dataset.oldColor = cell.style.color;
+                cell.dataset.oldFont = cell.style.fontFamily;
+                
+                cell.textContent = currentChar;
+                cell.style.color = currentColor;
+                cell.style.fontFamily = document.getElementById('font-select').value;
+            } else if (currentMode === 'erase') {
+                cell.classList.add('preview');
+                cell.dataset.oldText = cell.textContent;
+                cell.dataset.oldColor = cell.style.color;
+                
+                cell.textContent = '';
+                cell.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+            }
+        }
+
+        function clearPreview(cell) {
+            cell.classList.remove('preview');
+            if (cell.dataset.oldText !== undefined) {
+                cell.textContent = cell.dataset.oldText;
+                cell.style.color = cell.dataset.oldColor;
+                cell.style.fontFamily = cell.dataset.oldFont || '';
+                cell.style.backgroundColor = '';
+                delete cell.dataset.oldText;
+                delete cell.dataset.oldColor;
+                delete cell.dataset.oldFont;
+            }
+        }
+
+        initCanvas();
+
+        window.onmouseup = () => {
+            if (isMouseDown) saveState();
+            isMouseDown = false;
+        };
+
+        function handleAction(r, c) {
+            const cell = cells[r * COLS + c];
+            if (currentMode === 'draw') {
+                cell.textContent = currentChar;
+                cell.style.color = currentColor;
+                cell.style.fontFamily = document.getElementById('font-select').value;
+                // Clear preview state since it's now permanent
+                delete cell.dataset.oldText; 
+            } else if (currentMode === 'erase') {
+                cell.textContent = '';
+                cell.style.color = 'inherit';
+                cell.style.backgroundColor = '';
+                delete cell.dataset.oldText;
+            } else if (currentMode === 'bucket') {
+                floodFill(r, c, cell.textContent, cell.style.color);
+                saveState();
+            }
+            updateJSON();
+        }
+
+        function floodFill(r, c, targetChar, targetColor) {
+            const newChar = currentMode === 'erase' ? '' : currentChar;
+            const newColor = currentMode === 'erase' ? 'inherit' : currentColor;
+            const targetFont = cells[r * COLS + c].style.fontFamily;
+            const newFont = document.getElementById('font-select').value;
+
+            if (targetChar === newChar && targetColor === newColor && targetFont === newFont) return;
+
+            const queue = [[r, c]];
+            const visited = new Set();
+
+            while (queue.length > 0) {
+                const [curR, curC] = queue.shift();
+                const key = `${curR},${curC}`;
+                if (visited.has(key)) continue;
+                visited.add(key);
+
+                const cell = cells[curR * COLS + curC];
+                if (cell.textContent === targetChar && cell.style.color === targetColor) {
+                    cell.textContent = newChar;
+                    cell.style.color = newColor;
+                    cell.style.fontFamily = newFont;
+
+                    if (curR > 0) queue.push([curR - 1, curC]);
+                    if (curR < ROWS - 1) queue.push([curR + 1, curC]);
+                    if (curC > 0) queue.push([curR, curC - 1]);
+                    if (curC < COLS - 1) queue.push([curR, curC + 1]);
+                }
+            }
+        }
+
+        // Modes
+        document.getElementById('draw-mode').onclick = () => setMode('draw');
+        document.getElementById('erase-mode').onclick = () => setMode('erase');
+        document.getElementById('bucket-mode').onclick = () => setMode('bucket');
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.toolbar button').forEach(b => b.classList.remove('active'));
+            document.getElementById(mode + '-mode').classList.add('active');
+        }
+
+        function generateMap() {
+            const font = document.getElementById('font-select').value;
+            // Clear canvas first
+            cells.forEach(c => { c.textContent = ''; c.style.color = 'inherit'; });
+
+            if (font === 'dungeon mode') {
+                generateDungeon();
+            } else {
+                generateLayout();
+            }
+            saveState();
+        }
+
+        function generateDungeon() {
+            const wallChar = '█';
+            const floorChar = '·';
+            const color = currentColor;
+            const font = 'dungeon mode';
+
+            // Simple room generation
+            for (let i = 0; i < 10; i++) {
+                const w = Math.floor(Math.random() * 10) + 5;
+                const h = Math.floor(Math.random() * 6) + 4;
+                const x = Math.floor(Math.random() * (COLS - w - 2)) + 1;
+                const y = Math.floor(Math.random() * (ROWS - h - 2)) + 1;
+                
+                drawRect(x, y, w, h, wallChar, floorChar, color, font);
+            }
+        }
+
+        function generateLayout() {
+            const borderChars = {
+                tl: '┌', tr: '┐', bl: '└', br: '┘', h: '─', v: '│'
+            };
+            const color = currentColor;
+            const font = document.getElementById('font-select').value;
+
+            // Draw a main frame
+            drawBox(2, 2, COLS - 4, ROWS - 4, borderChars, color, font);
+            
+            // Draw some internal panels
+            drawBox(5, 5, 20, 10, borderChars, color, font);
+            drawBox(30, 5, COLS - 35, 15, borderChars, color, font);
+        }
+
+        function drawRect(x, y, w, h, wall, floor, color, font) {
+            for (let r = y; r < y + h; r++) {
+                for (let c = x; c < x + w; c++) {
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        const isEdge = r === y || r === y + h - 1 || c === x || c === x + w - 1;
+                        const cell = cells[r * COLS + c];
+                        cell.textContent = isEdge ? wall : floor;
+                        cell.style.color = color;
+                        cell.style.fontFamily = font;
+                    }
+                }
+            }
+        }
+
+        function drawBox(x, y, w, h, chars, color, font) {
+            for (let r = y; r < y + h; r++) {
+                for (let c = x; c < x + w; c++) {
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        const cell = cells[r * COLS + c];
+                        let char = ' ';
+                        if (r === y && c === x) char = chars.tl;
+                        else if (r === y && c === x + w - 1) char = chars.tr;
+                        else if (r === y + h - 1 && c === x) char = chars.bl;
+                        else if (r === y + h - 1 && c === x + w - 1) char = chars.br;
+                        else if (r === y || r === y + h - 1) char = chars.h;
+                        else if (c === x || c === x + w - 1) char = chars.v;
+                        
+                        if (char !== ' ') {
+                            cell.textContent = char;
+                            cell.style.color = color;
+                            cell.style.fontFamily = font;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('resize-canvas').onclick = () => {
+            COLS = parseInt(document.getElementById('canvas-cols').value);
+            ROWS = parseInt(document.getElementById('canvas-rows').value);
+            history = [];
+            historyIndex = -1;
+            initCanvas();
+        };
+
+        document.getElementById('undo-btn').onclick = undo;
+        document.getElementById('redo-btn').onclick = redo;
+        document.getElementById('generate-map').onclick = generateMap;
+
+        // Keybinds
+        window.onkeydown = (e) => {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            } else if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        };
+
+        document.getElementById('clear-canvas').onclick = () => {
+            cells.forEach(c => {
+                c.textContent = '';
+                c.style.color = 'inherit';
+            });
+            saveState();
+        };
+
+        function updateJSON() {
+            const data = [];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = cells[r * COLS + c];
+                    if (cell.textContent) {
+                        data.push({
+                            r, c,
+                            char: cell.textContent,
+                            color: cell.style.color,
+                            font: cell.style.fontFamily
+                        });
+                    }
+                }
+            }
+            document.getElementById('output-json').value = JSON.stringify(data);
+        }
+
+        document.getElementById('copy-text').onclick = () => {
+            const textarea = document.getElementById('output-json');
+            textarea.select();
+            document.execCommand('copy');
+            alert('JSON copied to clipboard!');
+        };
+
+        document.getElementById('font-select').onchange = () => {
+            const font = document.getElementById('font-select').value;
+            canvas.style.fontFamily = font;
+            updateCharPalette(font);
+        };
+    </script>
+</body>
+</html>

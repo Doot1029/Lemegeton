@@ -8,15 +8,31 @@
     <style>
         @font-face {
             font-family: 'dungeon mode';
-            src: url('dungeon-mode.ttf');
+            src: url('Fonts/dungeon-mode.ttf');
         }
         @font-face {
             font-family: 'silver';
-            src: url('Silver.ttf');
+            src: url('Fonts/Silver.ttf');
         }
         @font-face {
             font-family: 'infernal script';
             src: url('InfernalScript.ttf');
+        }
+        @font-face {
+            font-family: 'chunky';
+            src: url('Fonts/CHUNKY.ttf');
+        }
+        @font-face {
+            font-family: 'cp437';
+            src: url('Fonts/cp437-12x24.otf');
+        }
+        @font-face {
+            font-family: 'ursafont';
+            src: url('Fonts/UrsaFont.ttf');
+        }
+        @font-face {
+            font-family: 'ursafont-ansi';
+            src: url('Fonts/UrsaFont ANSI.ttf');
         }
         body {
             background-color: #000000;
@@ -27,14 +43,15 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            color: #fff;
+            color: #ffb000;
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
             cursor: url('cursor.png'), auto;
         }
         /* Style Lore terminal to fit inside PSone container */
         .lore-terminal {
             background: transparent !important;
             color: #ffb000 !important;
-            text-shadow: 0 0 5px rgba(255, 176, 0, 0.7) !important;
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor !important;
             box-shadow: none !important;
             padding: 20px !important;
             width: 100% !important;
@@ -52,6 +69,10 @@
             -moz-osx-font-smoothing: unset;
             image-rendering: pixelated;  
         }
+        /* Ensure all spans inside terminal also glow with their color */
+        .lore-terminal span {
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor !important;
+        }
         .lore-output {
             flex: 1 !important;
             height: auto !important;
@@ -67,6 +88,7 @@
         .lore-input {
             font-family: 'silver', sans-serif !important;
             color: #ffb000 !important;
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor !important;
             background: transparent !important;
             border: none !important;
             outline: none !important;
@@ -81,7 +103,7 @@
             width: 100vw;
             height: 100vh;
             position: relative;
-            background: linear-gradient(#0D2289, #6b1291);
+            background: linear-gradient(#3c3c3c, #262626);
             box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: row;
@@ -91,65 +113,6 @@
             margin: 0;
             border: none;
             border-radius: 0;
-            filter: url('#crt-curvature');
-        }
-        /* CRT Shadow Mask Filter */
-        .graphics-window::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: 
-                /* Scanlines */
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
-                /* Phosphor Mask (Aperture Grille/Shadow Mask simulation) */
-                linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.03), rgba(0, 0, 255, 0.05));
-            z-index: 100;
-            background-size: 100% 3px, 3px 100%;
-            pointer-events: none;
-        }
-        .graphics-window::after {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            /* Vignette and Subtle Curve simulation */
-            background: 
-                radial-gradient(circle at center, rgba(18, 16, 16, 0) 40%, rgba(0, 0, 0, 0.4) 100%),
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            z-index: 101;
-            background-size: 100% 100%, 100% 4px;
-            pointer-events: none;
-            animation: flicker 0.15s infinite;
-        }
-        @keyframes flicker {
-            0% { opacity: 0.98; }
-            5% { opacity: 0.99; }
-            10% { opacity: 0.97; }
-            15% { opacity: 0.98; }
-            20% { opacity: 0.99; }
-            25% { opacity: 0.98; }
-            30% { opacity: 0.97; }
-            35% { opacity: 0.99; }
-            40% { opacity: 0.98; }
-            45% { opacity: 0.97; }
-            50% { opacity: 0.99; }
-            55% { opacity: 0.98; }
-            60% { opacity: 0.97; }
-            65% { opacity: 0.99; }
-            70% { opacity: 0.98; }
-            75% { opacity: 0.97; }
-            80% { opacity: 0.99; }
-            85% { opacity: 0.98; }
-            90% { opacity: 0.97; }
-            95% { opacity: 0.99; }
-            100% { opacity: 0.98; }
         }
         .vertical-line {
             width: 3px;
@@ -162,6 +125,54 @@
             height: 100%;
             position: relative;
         }
+        #ascii-window {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            background: #000;
+        }
+        #rpg-graphics {
+            flex: 2;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            font-family: 'cp437', 'chunky', 'ursafont', monospace;
+            white-space: pre;
+            color: #ffb000;
+            text-shadow: 0 0 10px currentColor;
+            line-height: 1.1;
+        }
+        #rpg-dialog {
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: 'silver', sans-serif;
+            font-size: 2.2rem;
+            color: #ffb000;
+            text-shadow: 0 0 10px currentColor;
+            overflow-y: auto;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .mode-text #terminal-window { display: block; flex: 1; }
+        .mode-text #ascii-window { display: none; }
+        
+        .mode-ascii .lore-output { display: none !important; }
+        .mode-ascii #ascii-window { display: flex; flex: 1; }
+        .mode-ascii #terminal-window { 
+            display: block; 
+            flex: 0 0 auto;
+        }
+        .mode-ascii .lore-terminal {
+            height: auto !important;
+            padding: 10px 20px !important;
+        }
+        
         #info-panel {
             width: 400px;
             height: 100%;
@@ -178,13 +189,14 @@
             color: #ffb000;
             font-size: 2rem;
             margin-bottom: 10px;
-            text-shadow: 0 0 5px rgba(255, 176, 0, 0.5);
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
         }
         .info-content {
             font-family: 'silver';
-            color: #fff;
+            color: #ffb000;
             font-size: 1.8rem;
             line-height: 1.4;
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
         }
         .text-cursor {
             cursor: text !important;
@@ -196,6 +208,21 @@
         /* Make Dungeon Mode larger */
         span[style*="dungeon mode"] {
             font-size: 0.5em;
+        }
+
+        .retro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('retroarch_overlay_dotmatrix_1280x720.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.8; /* Adjust as needed */
         }
 
         /* Responsive Styles */
@@ -238,17 +265,23 @@
         }
     </style>
 </head>
-<body>
+<body class="mode-ascii">
   <aside class="graphics-window">
-    <div id="terminal-window"></div>
+    <div id="game-main" style="flex: 1; display: flex; flex-direction: column; height: 100%;">
+        <div id="terminal-window" style="flex: 1;"></div>
+        <div id="ascii-window">
+            <div id="rpg-graphics"></div>
+            <div id="rpg-dialog"></div>
+        </div>
+    </div>
     <div class="vertical-line"></div>
     <div id="info-panel">
         <div class="info-title">Lemegeton</div>
         <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 10px 0;">
         <div class="info-content">
             <p>Subject: Lemegeton</p>
-            <p>Status: <span style="color: #00ff00;">Connected</span></p>
-            <p style="margin-top: 20px; font-size: 1.4rem; color: rgba(255, 255, 255, 0.6);">
+            <p>Status: <span style="color: #00ff00; text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;">Connected</span></p>
+            <p style="margin-top: 20px; font-size: 1.4rem; color: #ffb000; text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;">
                 "The split between worlds is but a thin line."
             </p>
         </div>
@@ -276,22 +309,100 @@
       attachTerminalToMount();
 
       game.loadNovel("./node_modules/lorejs/games/lemegeton.js");
+      
+      // Start in ASCII mode
+      setTimeout(() => {
+        if (window.setGameMode) window.setGameMode('ascii');
+      }, 500);
+
+      // Mode management
+      window.setGameMode = function(mode) {
+        if (mode === 'ascii') {
+          document.body.classList.remove('mode-text');
+          document.body.classList.add('mode-ascii');
+          startAsciiAnimation();
+        } else {
+          document.body.classList.remove('mode-ascii');
+          document.body.classList.add('mode-text');
+          stopAsciiAnimation();
+        }
+      };
+
+      // ASCII Animation Logic
+      let asciiInterval = null;
+      let frame = 0;
+      const graphicsEl = document.getElementById('rpg-graphics');
+      
+      function startAsciiAnimation() {
+        if (asciiInterval) return;
+        asciiInterval = requestAnimationFrame(animateAscii);
+      }
+
+      function stopAsciiAnimation() {
+        if (asciiInterval) {
+          cancelAnimationFrame(asciiInterval);
+          asciiInterval = null;
+        }
+      }
+
+      function animateAscii() {
+        frame++;
+        
+        const currentRoom = game.engine.world.rooms.get(game.engine.state.currentRoom);
+        if (currentRoom && currentRoom.asciiArt) {
+          graphicsEl.innerHTML = currentRoom.asciiArt;
+          asciiInterval = requestAnimationFrame(animateAscii);
+          return;
+        }
+
+        // Simple procedural landscape for demonstration
+        const width = 60;
+        const height = 15;
+        let output = "";
+        
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const wave = Math.sin(x * 0.2 + frame * 0.1) * 2 + 8;
+            if (y > wave) {
+              // Terrain
+              const chars = ["#", "X", "m", "w"];
+              output += chars[Math.floor(Math.random() * chars.length)];
+            } else if (y > wave - 1) {
+              // Surface
+              output += "~";
+            } else if (x === 10 + Math.floor(Math.sin(frame * 0.05) * 5) && y === 5) {
+                // Moving character
+                output += "@";
+            } else {
+              // Sky
+              if (Math.random() > 0.99) output += "*";
+              else output += " ";
+            }
+          }
+          output += "\n";
+        }
+        
+        graphicsEl.textContent = output;
+        asciiInterval = requestAnimationFrame(animateAscii);
+      }
+
+      // Intercept Lore print to redirect to RPG dialog if in ASCII mode
+      const originalPrintLine = LORE.Engine.prototype.printLine;
+      LORE.Engine.prototype.printLine = function(text, options) {
+        if (document.body.classList.contains('mode-ascii')) {
+          const dialogEl = document.getElementById('rpg-dialog');
+          const p = document.createElement('p');
+          // Basic tag replacement for the dialog box
+          p.innerHTML = text.replace(/{{bold}}/g, '<b>').replace(/{{font_reset}}/g, '</b>')
+                            .replace(/{{red}}/g, '<span style="color:red">').replace(/{{color_reset}}/g, '</span>')
+                            .replace(/{{yellow}}/g, '<span style="color:yellow">')
+                            .replace(/{{n}}/g, '<br>');
+          dialogEl.appendChild(p);
+          dialogEl.scrollTop = dialogEl.scrollHeight;
+        }
+        return originalPrintLine.apply(this, arguments);
+      };
     </script>
   </aside>
-  <svg width="0" height="0" style="position: absolute;">
-    <filter id="crt-curvature">
-      <!-- Slight blur for phosphor bloom -->
-      <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="blur" />
-      <feComponentTransfer in="blur" result="glow">
-        <feFuncR type="linear" slope="1.1" />
-        <feFuncG type="linear" slope="1.1" />
-        <feFuncB type="linear" slope="1.1" />
-      </feComponentTransfer>
-      <feMerge>
-        <feMergeNode in="glow" />
-        <feMergeNode in="SourceGraphic" />
-      </feMerge>
-    </filter>
-  </svg>
 </body>
 </html>

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 8,
             "patches": [
                 {
                     "date": 1772144153150,
@@ -12,6 +12,34 @@
                 {
                     "date": 1772144160578,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,8 @@\n-const LORE = require('./node_modules/lorejs/lore.js');\n+const LORE = require(\"./node_modules/lorejs/lore.js\");\n const game = new LORE.Game();\n \n // Load the game\n-game.loadNovel(lemegeton).then(() => {\n-});\n+game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\n+\n+// Start the game\n+game.start();\n"
+                },
+                {
+                    "date": 1772252567388,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,4 +2,5 @@\n const game = new LORE.Game();\r\n \r\n // Load the game\r\n game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\r\n+\r\n"
+                },
+                {
+                    "date": 1772252587051,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,9 +1,7 @@\n-const LORE = require(\"./node_modules/lorejs/lore.js\");\n-const game = new LORE.Game();\n-\n-// Load the game\n-game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\n+const LORE = require(\"./node_modules/lorejs/lore.js\");\r\n+const game = new LORE.Game();\r\n \r\n-\n-// Start the game\n-game.start();\n+// Load the game\r\n+game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\r\n+\r\n+\r\n"
+                },
+                {
+                    "date": 1772252636393,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,4 +3,5 @@\n \r\n // Load the game\r\n game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\r\n \r\n+bas\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1772252692079,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,5 +3,7 @@\n \r\n // Load the game\r\n game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\r\n \r\n-bas\n\\ No newline at end of file\n+context.on('page', () => {\r\n+    \r\n+});\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1772252730773,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,7 +3,4 @@\n \r\n // Load the game\r\n game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\r\n \r\n-context.on('page', () => {\r\n-    \r\n-});\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1772252780193,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,5 +3,14 @@\n \r\n // Load the game\r\n game.loadNovel(\"./node_modules/lorejs/games/lemegeton.js\");\r\n \r\n-pw\n\\ No newline at end of file\n+const { chromium } = require('playwright');\r\n+\r\n+(async () => {\r\n+    const browser = await chromium.launch();\r\n+    const page = await browser.newPage();\r\n+\r\n+    \r\n+\r\n+    await browser.close();\r\n+})();\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1772252826192,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,8 +9,8 @@\n (async () => {\r\n     const browser = await chromium.launch();\r\n     const page = await browser.newPage();\r\n \r\n-    \r\n+    goto\r\n \r\n     await browser.close();\r\n })();\n\\ No newline at end of file\n"
                 }
             ],
             "date": 1772144153150,
