@@ -3,15 +3,17 @@ Add custom instructions for the agents below
 -->
 
 # Info about LoreJS
+
 * Read everything in the folder called "ai-context"
-* Read everything in the folder "node_modules > lorejs > games"
 * Code in "lemegeton.js"
-* Intergrate a terminal from folder lorejs
 * Use the command: "node index.js" to test the game
-* Find '.../ai-context/images/...'to look for any images to read
-* After reading an image, delete it afterwards and fix any issues
+* Find '.../ai-context/images/...'to look for any screenshot images to read
+* After reading an image, fix any issues that come up from reading the image and test the game again.
+* Do this until the screenshot appears as it should be.
 * Add a commit message and commit in terminal
 * push in origin main
+
+NOTE: Deleting the screenshot images is not required, since it will overwrite anyway. Just make sure to keep using that command in order to read the screenshot images.
 
 # Each Font's Character Map For ASCII:
 

@@ -2,7 +2,9 @@ const { chromium } = require('playwright');
 const path = require('path');
 
 (async () => {
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({
+        args: ['--disable-web-security', '--allow-file-access-from-files']
+    });
     const page = await browser.newPage();
     
     // Set viewport size for a consistent screenshot

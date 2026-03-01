@@ -125,54 +125,6 @@
             height: 100%;
             position: relative;
         }
-        #ascii-window {
-            flex: 1;
-            height: 100%;
-            position: relative;
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            background: #000;
-        }
-        #rpg-graphics {
-            flex: 2;
-            width: 100%;
-            overflow: auto;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            font-family: 'cp437', 'chunky', 'ursafont', monospace;
-            white-space: pre;
-            color: #ffb000;
-            text-shadow: 0 0 10px currentColor;
-            line-height: 1.1;
-            padding: 20px;
-            box-sizing: border-box;
-            display: block;
-            text-align: center;
-        }
-        #rpg-dialog {
-            flex: 1;
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-            font-family: 'silver', sans-serif;
-            font-size: 2.2rem;
-            color: #ffb000;
-            text-shadow: 0 0 10px currentColor;
-            overflow-y: auto;
-            border-top: 2px solid rgba(255, 255, 255, 0.1);
-        }
-        .mode-text #terminal-window { display: block; flex: 1; }
-        .mode-text #ascii-window { display: none; }
-        
-        .mode-ascii .lore-output { display: none !important; }
-        .mode-ascii #ascii-window { display: flex; flex: 1; }
-        .mode-ascii #terminal-window { 
-            display: block; 
-            flex: 0 0 auto;
-        }
-        .mode-ascii .lore-terminal {
-            height: auto !important;
-            padding: 10px 20px !important;
-        }
         
         #info-panel {
             width: 400px;
@@ -266,14 +218,10 @@
         }
     </style>
 </head>
-<body class="mode-ascii">
+<body class="mode-text">
   <aside class="graphics-window">
     <div id="game-main" style="flex: 1; display: flex; flex-direction: column; height: 100%;">
         <div id="terminal-window" style="flex: 1;"></div>
-        <div id="ascii-window">
-            <div id="rpg-graphics"></div>
-            <div id="rpg-dialog"></div>
-        </div>
     </div>
     <div class="vertical-line"></div>
     <div id="info-panel">
@@ -288,6 +236,7 @@
         </div>
     </div>
     <script src="node_modules/lorejs/lore.js"></script>
+    <script src="node_modules/lorejs/games/lemegeton.js"></script>
     <script>
       const game = new LORE.Game();
 
@@ -308,80 +257,7 @@
       }
 
       attachTerminalToMount();
-
-      game.loadNovel("./node_modules/lorejs/games/lemegeton.js").then(() => {
-        // Start in ASCII mode after novel is loaded
-        setTimeout(() => {
-          if (window.setGameMode) window.setGameMode('ascii');
-        }, 100);
-      });
-
-      // Mode management
-      window.setGameMode = function(mode) {
-        if (mode === 'ascii') {
-          document.body.classList.remove('mode-text');
-          document.body.classList.add('mode-ascii');
-          startAsciiAnimation();
-        } else {
-          document.body.classList.remove('mode-ascii');
-          document.body.classList.add('mode-text');
-          stopAsciiAnimation();
-        }
-      };
-
-      // ASCII Animation Logic
-      let asciiInterval = null;
-      const graphicsEl = document.getElementById('rpg-graphics');
-      let lastAsciiRoom = null;
-      
-      function startAsciiAnimation() {
-        if (asciiInterval) return;
-        asciiInterval = requestAnimationFrame(animateAscii);
-      }
-
-      function stopAsciiAnimation() {
-        if (asciiInterval) {
-          cancelAnimationFrame(asciiInterval);
-          asciiInterval = null;
-          lastAsciiRoom = null;
-        }
-      }
-
-      function animateAscii() {
-        if (game.state && game.state.currentRoom) {
-          if (game.state.currentRoom !== lastAsciiRoom) {
-            const currentRoom = game.world.rooms.get(game.state.currentRoom);
-            if (currentRoom && currentRoom.asciiArt) {
-              graphicsEl.textContent = currentRoom.asciiArt;
-            } else {
-              graphicsEl.textContent = "";
-            }
-            lastAsciiRoom = game.state.currentRoom;
-          }
-        } else if (lastAsciiRoom !== null) {
-          graphicsEl.innerHTML = "";
-          lastAsciiRoom = null;
-        }
-        
-        asciiInterval = requestAnimationFrame(animateAscii);
-      }
-
-      // Intercept Lore print to redirect to RPG dialog if in ASCII mode
-      const originalPrintLine = LORE.Game.prototype.printLine;
-      LORE.Game.prototype.printLine = function(text, options) {
-        if (document.body.classList.contains('mode-ascii')) {
-          const dialogEl = document.getElementById('rpg-dialog');
-          const p = document.createElement('p');
-          // Basic tag replacement for the dialog box
-          p.innerHTML = text.replace(/{{bold}}/g, '<b>').replace(/{{font_reset}}/g, '</b>')
-                            .replace(/{{red}}/g, '<span style="color:red">').replace(/{{color_reset}}/g, '</span>')
-                            .replace(/{{yellow}}/g, '<span style="color:yellow">')
-                            .replace(/{{n}}/g, '<br>');
-          dialogEl.appendChild(p);
-          dialogEl.scrollTop = dialogEl.scrollHeight;
-        }
-        return originalPrintLine.apply(this, arguments);
-      };
+      game.loadNovel(window.LemegetonNovel);
     </script>
   </aside>
 </body>
