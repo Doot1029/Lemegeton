@@ -45,7 +45,7 @@
             overflow: hidden;
             color: #ffb000;
             text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
-            cursor: url('cursor.png'), auto;
+            cursor: none; /* Hide default cursor */
         }
         /* Style Lore terminal to fit inside PSone container */
         .lore-terminal {
@@ -69,6 +69,92 @@
             -moz-osx-font-smoothing: unset;
             image-rendering: pixelated;  
         }
+        
+        /* Menu Screen Styles */
+        #menu-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(#a20000, #262626);
+            z-index: 10001;
+            padding: 50px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            font-family: 'silver', sans-serif;
+            color: #ffb000;
+        }
+
+        .menu-header {
+            font-family: 'dungeon mode';
+            font-size: 3rem;
+            margin-bottom: 30px;
+            color: #ffb000;
+            text-transform: uppercase;
+            padding-left: 20px;
+        }
+
+        .menu-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .menu-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .menu-item {
+            display: grid;
+            grid-template-columns: 50px 1fr 150px 200px;
+            padding: 2px 20px;
+            font-size: 2.5rem;
+            margin: 2px 0;
+            line-height: 1.2;
+            text-transform: lowercase;
+        }
+
+        .menu-item.selected {
+            background-color: #ffb000;
+            color: #a20000; /* Red from gradient */
+            text-shadow: none !important;
+        }
+
+        .menu-item.selected span {
+            color: inherit !important;
+            text-shadow: none !important;
+        }
+
+        .menu-footer {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            font-size: 2rem;
+            padding-left: 20px;
+        }
+
+        .footer-key {
+            background: #ffb000;
+            color: #a20000;
+            padding: 0 10px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Ensure no cursor showing on inputs */
+        .lore-input {
+            cursor: none !important;
+            caret-color: transparent !important;
+        }
         /* Ensure all spans inside terminal also glow with their color */
         .lore-terminal span {
             text-shadow: 0 0 10px currentColor, 0 0 20px currentColor !important;
@@ -79,6 +165,12 @@
             line-height: 1.2;
             overflow-y: auto !important;
             margin-bottom: 10px !important;
+            white-space: normal !important;
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+        }
+        .lore-output::-webkit-scrollbar {
+            display: none !important;
         }
         .lore-input-container {
             display: flex !important;
@@ -136,6 +228,11 @@
             border-left: 2px solid rgba(255, 255, 255, 0.2);
             background: rgba(0, 0, 0, 0.1);
             overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        #info-panel::-webkit-scrollbar {
+            display: none;
         }
         .info-title {
             font-family: 'dungeon mode';
@@ -219,7 +316,17 @@
     </style>
 </head>
 <body class="mode-text">
-  <aside class="graphics-window">
+  <div id="menu-screen">
+    <div class="menu-header">TEXT ADVENTURE GAME SELECTION</div>
+    <div class="menu-list" id="menu-list">
+        <!-- Menu items will be injected here -->
+    </div>
+    <div class="menu-footer">
+        <div><span class="footer-key">↑↓</span> navigate</div>
+        <div><span class="footer-key">enter</span> play</div>
+    </div>
+  </div>
+  <aside class="graphics-window hidden">
     <div id="game-main" style="flex: 1; display: flex; flex-direction: column; height: 100%;">
         <div id="terminal-window" style="flex: 1;"></div>
     </div>
@@ -236,9 +343,150 @@
         </div>
     </div>
     <script src="node_modules/lorejs/lore.js"></script>
-    <script src="node_modules/lorejs/games/lemegeton.js"></script>
+    <script src="game/plugins.js"></script>
+    <script src="game/rooms.js"></script>
+    <script src="game/characters.js"></script>
+    <script src="game/items.js"></script>
+    <script src="game/main.js"></script>
     <script>
       const game = new LORE.Game();
+      const menuScreen = document.getElementById('menu-screen');
+      const gameScreen = document.querySelector('.graphics-window');
+      const menuList = document.getElementById('menu-list');
+
+      const games = [
+        { id: 'lemegeton', title: 'Lemegeton: The Journey to Apotheosis', time: '10:10', author: 'Amurox' },
+        { id: 'theurgia', title: 'Theurgia: Celestial Path', time: '3:35', author: 'Theurgia' },
+        { id: 'goetia', title: 'Goetia: Abaddonian Depths', time: '4:44', author: 'Abaddon' },
+        { id: 'solomonis', title: 'Solomonis: The King\'s Ring', time: '4:21', author: 'Clavicula' },
+        { id: 'desdemona', title: 'Desdemona: The Masogire Arc', time: '7:01', author: 'Shadowbrook' },
+        { id: 'sith', title: 'Sith: The Sarcastic Feline', time: '5:23', author: 'Abaddon' },
+        { id: 'eden', title: 'Eden: A Fictional Paradise', time: '5:04', author: 'Kingdom' },
+        { id: 'forbidden', title: 'Forbidden: The Tree of Knowledge', time: '7:02', author: 'Eden' },
+        { id: 'apotheosis', title: 'Apotheosis: Armageddon', time: '3:27', author: 'The Zenith' },
+        { id: 'lucifer', title: 'Lucifer: Ruler of Earth', time: '7:00', author: 'Abaddon' }
+      ];
+
+      let selectedIndex = 0;
+
+      function renderMenu() {
+        menuList.innerHTML = games.map((game, index) => `
+          <div class="menu-item ${index === selectedIndex ? 'selected' : ''}">
+            <span class="item-number">${index + 1}</span>
+            <span class="item-title">${game.title}</span>
+            <span class="item-time">${game.time}</span>
+            <span class="item-author">${game.author}</span>
+          </div>
+        `).join('');
+      }
+
+      function handleKeyDown(e) {
+        if (!menuScreen.classList.contains('hidden')) {
+          if (e.key === 'ArrowDown') {
+            selectedIndex = (selectedIndex + 1) % games.length;
+            renderMenu();
+            e.preventDefault();
+          } else if (e.key === 'ArrowUp') {
+            selectedIndex = (selectedIndex - 1 + games.length) % games.length;
+            renderMenu();
+            e.preventDefault();
+          } else if (e.key === 'Enter') {
+            startGame(games[selectedIndex]);
+            e.preventDefault();
+          }
+        }
+      }
+
+      // Add a test command to check selectFromList
+      game.registerCommand({
+        name: 'test',
+        help: 'Test the selection menu',
+        fn: async (args, engine) => {
+          const options = ['First Option', 'Second Option', 'Third Option'];
+          const choice = await engine.selectFromList('Choose a test option:', options);
+          if (choice !== -1) {
+            engine.printLine(`You selected: ${options[choice]}`);
+          } else {
+            engine.printLine('Selection cancelled.');
+          }
+          return true;
+        }
+      });
+
+      function startGame(selectedGame) {
+        menuScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        
+        // Hide terminal input cursor/caret via CSS (already handled)
+        
+        if (selectedGame.id === 'lemegeton') {
+          game.loadNovel(window.LemegetonNovel);
+        } else {
+          // Placeholder for other games
+          game.printLine(`{{red}}Error: Game "${selectedGame.title}" data not found.{{font_reset}}`);
+          game.printLine(`{{yellow}}Only "Lemegeton" is playable in this build.{{font_reset}}`);
+          game.printLine(`{{bold}}Press Esc to return to menu.{{font_reset}}`);
+        }
+      }
+
+      window.addEventListener('keydown', handleKeyDown);
+      renderMenu();
+
+      // Override selectFromList for retro-style navigation in-game
+      game.selectFromList = function(prompt, options) {
+        return new Promise((resolve) => {
+          this.printLine(prompt);
+          const menuId = 'game-choice-' + Date.now();
+          const choiceContainer = document.createElement('div');
+          choiceContainer.id = menuId;
+          choiceContainer.className = 'game-choice-container';
+          this.outputElement.appendChild(choiceContainer);
+
+          let currentChoice = 0;
+          const totalOptions = options.length + 1; // +1 for Cancel
+
+          const renderChoices = () => {
+            let html = '';
+            for (let i = 0; i < options.length; i++) {
+              html += `<div class="menu-item ${i === currentChoice ? 'selected' : ''}" style="grid-template-columns: 50px 1fr;">
+                <span class="item-number">${i + 1}</span>
+                <span class="item-title">${options[i]}</span>
+              </div>`;
+            }
+            html += `<div class="menu-item ${options.length === currentChoice ? 'selected' : ''}" style="grid-template-columns: 50px 1fr;">
+              <span class="item-number">${options.length + 1}</span>
+              <span class="item-title">Cancel</span>
+            </div>`;
+            choiceContainer.innerHTML = html;
+            this.scrollToBottom();
+          };
+
+          const handleChoiceKey = (e) => {
+            if (e.key === 'ArrowDown') {
+              currentChoice = (currentChoice + 1) % totalOptions;
+              renderChoices();
+              e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+              currentChoice = (currentChoice - 1 + totalOptions) % totalOptions;
+              renderChoices();
+              e.preventDefault();
+            } else if (e.key === 'Enter') {
+              window.removeEventListener('keydown', handleChoiceKey);
+              const result = currentChoice === options.length ? -1 : currentChoice;
+              // Clean up: replace the interactive menu with static text of selection
+              choiceContainer.innerHTML = `<div class="menu-item" style="grid-template-columns: 50px 1fr;">
+                <span class="item-number">></span>
+                <span class="item-title">${currentChoice === options.length ? 'Cancel' : options[currentChoice]}</span>
+              </div>`;
+              resolve(result);
+              e.preventDefault();
+            }
+          };
+
+          window.addEventListener('keydown', handleChoiceKey);
+          renderChoices();
+        });
+      };
 
       function attachTerminalToMount() {
         const terminal = document.querySelector('.lore-terminal');
@@ -257,7 +505,6 @@
       }
 
       attachTerminalToMount();
-      game.loadNovel(window.LemegetonNovel);
     </script>
   </aside>
 </body>

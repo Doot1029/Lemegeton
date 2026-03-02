@@ -1,0 +1,30 @@
+{
+    "sourceFile": "game/rooms.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 3,
+            "patches": [
+                {
+                    "date": 1772420694324,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1772420700555,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,8 @@\n   {\r\n     id: 'atrium',\r\n     name: '{{bold}}Atrium{{font_reset}}',\r\n     description: '\r\n-    \r\n     A ritual atrium filled with humming glyphs. The Lemegeton grimoire lies on a pedestal here. Try commands like {{yellow}}help{{color_reset}}, {{yellow}}go north{{color_reset}}, {{yellow}}take lemegeton{{color_reset}}, and {{yellow}}read lemegeton{{color_reset}}.',\r\n     exits: {\r\n       north: 'sanctum'\r\n     },\r\n"
+                },
+                {
+                    "date": 1772420710184,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n   {\r\n     id: 'atrium',\r\n     name: '{{bold}}Atrium{{font_reset}}',\r\n     description: 'Fifteen skinny, square towers piercing the sky are the first you'll see of this castle and are connected by large, wide walls made of grey stone.\r\n-Rough windows are scattered thinly across the walls in a seemingly random pattern, along with symmetric crenelations for archers and artillery.\r\n+    Rough windows are scattered thinly across the walls in a seemingly random pattern, along with symmetric crenelations for archers and artillery.\r\n \r\n A regular gate with large metal doors, a regular bridge and various artillery equipment guards a tranquil city within this extinguished volcanoand it's the only way in, at least to those unfamiliar with the castle and its surroundings.\r\n \r\n Plain fields of a type of grass cover most of the fields outside of the castle, adding to the castle's aesthetics. This castle has clearly stood the test of time, the rocks of the walls are aged and vines and plants grow inside the cracks, but this castle will last for ages to come.\r\n"
+                },
+                {
+                    "date": 1772420716389,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,12 +1,10 @@\n const LemegetonRooms = [\r\n   {\r\n     id: 'atrium',\r\n     name: '{{bold}}Atrium{{font_reset}}',\r\n-    description: 'Fifteen skinny, square towers piercing the sky are the first you'll see of this castle and are connected by large, wide walls made of grey stone. Rough windows are scattered thinly across the walls in a seemingly random pattern, along with symmetric crenelations for archers and artillery.\r\n+    description: 'Fifteen skinny, square towers piercing the sky are the first you'll see of this castle and are connected by large, wide walls made of grey stone. Rough windows are scattered thinly across the walls in a seemingly random pattern, along with symmetric crenelations for archers and artillery. A regular gate with large metal doors, a regular bridge and various artillery equipment guards a tranquil city within this extinguished volcanoand it's the only way in, at least to those unfamiliar with the castle and its surroundings.\r\n \r\n-A regular gate with large metal doors, a regular bridge and various artillery equipment guards a tranquil city within this extinguished volcanoand it's the only way in, at least to those unfamiliar with the castle and its surroundings.\r\n-\r\n Plain fields of a type of grass cover most of the fields outside of the castle, adding to the castle's aesthetics. This castle has clearly stood the test of time, the rocks of the walls are aged and vines and plants grow inside the cracks, but this castle will last for ages to come.\r\n     A ritual atrium filled with humming glyphs. The Lemegeton grimoire lies on a pedestal here. Try commands like {{yellow}}help{{color_reset}}, {{yellow}}go north{{color_reset}}, {{yellow}}take lemegeton{{color_reset}}, and {{yellow}}read lemegeton{{color_reset}}.',\r\n     exits: {\r\n       north: 'sanctum'\r\n"
+                }
+            ],
+            "date": 1772420694324,
+            "name": "Commit-0",
+            "content": "const LemegetonRooms = [\r\n  {\r\n    id: 'atrium',\r\n    name: '{{bold}}Atrium{{font_reset}}',\r\n    description: '\r\n    \r\n    A ritual atrium filled with humming glyphs. The Lemegeton grimoire lies on a pedestal here. Try commands like {{yellow}}help{{color_reset}}, {{yellow}}go north{{color_reset}}, {{yellow}}take lemegeton{{color_reset}}, and {{yellow}}read lemegeton{{color_reset}}.',\r\n    exits: {\r\n      north: 'sanctum'\r\n    },\r\n    items: ['sigil', 'lemegeton'],\r\n    onEnter: (state, engine) => {\r\n      if (!engine.plugins.has('lemegeton_plugin')) {\r\n        engine.loadPlugin(window.LemegetonPlugin);\r\n      }\r\n      if (!state.flags.metDemons) {\r\n          setTimeout(() => {\r\n              engine.printLine(\"Astaroth: \\\"Welcome, seeker. You look lost in these halls of knowledge.\\\"\");\r\n              engine.printLine(\"Belial: \\\"Knowledge is a heavy burden, isn't it? Better to just enjoy the view.\\\"\");\r\n              state.flags.metDemons = true;\r\n          }, 500);\r\n      }\r\n    },\r\n    characters: ['astaroth', 'belial'],\r\n  },\r\n  {\r\n    id: 'sanctum',\r\n    name: '{{bold}}Sanctum{{font_reset}}',\r\n    description: 'A quiet sanctum where idle effects continue between actions.',\r\n    exits: {\r\n      south: 'atrium'\r\n    }\r\n  }\r\n];\r\n\r\nif (typeof window !== 'undefined') {\r\n  window.LemegetonRooms = LemegetonRooms;\r\n}\r\n"
+        }
+    ]
+}

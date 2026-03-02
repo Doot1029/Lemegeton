@@ -40,6 +40,12 @@ Avalon (Heaven):
 * Combat Chambers: For angels to practice fighting in Celestia Academy.
 * The Light Order: An order, a government for angels to handle out punishment and dictate Heaven. Its main building is in Aethelway.
 
+# Bonus: Tavern Description for The Drunken Devil!
+
+From the outside it looks horrible, uncomfortable and depressing. Clay bricks and stone pillars make up most of the building's outer structure. It's near impossible to see through the small, stained glass windows, but the awkward silence from within can be felt outside.
+As you enter the tavern through the worn, metal door, you're welcomed by aromas of what's probably food, hopefully and a coldness.
+The bartender is staring at nothing and makes no effort to acknowledge your pressence. It's as disgusting inside as it is on the outside. Marble pillars support the upper floor and the light fixtures attached to them. The walls are littered with all sorts of memorabilia, many of which have become unrecognizable due to dust, cobwebs and other dirt. The tavern itself is almost completely abanonded. The few people inside could be locals, could be lost souls, but whoever they are, you begin to fear for your safety, it's probably best to find a different place. You did hear rumors about this tavern, supposedly it's infamous for something, but for the life of you you can't remember what for. Though juding by the dirt and unhygienic circumstances, it's probably food poisoning.
+
 ## Items of Interest:
 
 * Abaddonian Coins: A currency in Abaddon.
