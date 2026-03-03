@@ -3,11 +3,27 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1772421586667,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1772428750910,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n const LemegetonNovel = {\r\n   title: 'Lemegeton: The Journey to Apotheosis',\r\n-  startRoom: 'tavern',\r\n+  startRoom: '',\r\n   onLoad: (engine) => {\r\n     engine.loadPlugin(window.LemegetonPlugin);\r\n   },\r\n   rooms: window.LemegetonRooms,\r\n"
+                },
+                {
+                    "date": 1772428841998,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n const LemegetonNovel = {\r\n   title: 'Lemegeton: The Journey to Apotheosis',\r\n-  startRoom: '',\r\n+  startRoom: 'A',\r\n   onLoad: (engine) => {\r\n     engine.loadPlugin(window.LemegetonPlugin);\r\n   },\r\n   rooms: window.LemegetonRooms,\r\n"
+                },
+                {
+                    "date": 1772428850426,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n const LemegetonNovel = {\r\n   title: 'Lemegeton: The Journey to Apotheosis',\r\n-  startRoom: '',\r\n+  startRoom: 'lemegeton',\r\n   onLoad: (engine) => {\r\n     engine.loadPlugin(window.LemegetonPlugin);\r\n   },\r\n   rooms: window.LemegetonRooms,\r\n"
+                },
+                {
+                    "date": 1772430435184,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,8 @@\n const LemegetonNovel = {\r\n   title: 'Lemegeton: The Journey to Apotheosis',\r\n   startRoom: 'lemegeton_start',\r\n+  \r\n   onLoad: (engine) => {\r\n     engine.loadPlugin(window.LemegetonPlugin);\r\n   },\r\n   rooms: window.LemegetonRooms,\r\n"
                 }
             ],
             "date": 1772421586667,

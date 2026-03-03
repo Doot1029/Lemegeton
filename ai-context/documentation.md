@@ -7,19 +7,19 @@ Play Demo LoreJS is under active development. Features and APIs may change betwe
 
 Include LoreJS in your project:
 
-```
+``` html
 <script src="lore.js"></script>
 <script>
     const game = new LORE.Game();
 </script>
 ```
-```
+```js
 // Node.js
 const LORE = require('./lore.js');
 const game = new LORE.Game();
 ```
 Basic Usage
-```
+```js
 // Create a game instance
 const game = new LORE.Game({
     prompt: "> ",
@@ -51,7 +51,7 @@ LoreJS games are built around several key components:
 Rooms: Locations the player can navigate betweenItems: Objects that can be taken, used, or examinedCharacters: NPCs with dialog and interaction capabilitiesCommands: Player actions like 'look', 'take', 'use'Events: Conditional triggers for game progression State Management
 The engine maintains comprehensive game state:
 
-```
+```js
 game.state = {
     currentRoom: "room1",      // Current location
     inventory: ["item1"],      // Player's items
@@ -78,7 +78,7 @@ Option: clearScreenOnNovelLoad / Type: boolean / Default: true / Description: Cl
 Option: disableTextAnimation / Type: boolean / Default: false / Description: Disable typing animation
 
 ### Theme Configuration
-```
+```js
 const theme = {
     "--lore-bg-color": "#000000",
     "--lore-text-color": "#ffffff", 
@@ -94,7 +94,7 @@ game.loadTheme(theme);
 ## World Building
 ### Creating Rooms
 
-```
+```js
 game.addRoom({
     id: "forest",
     name: "{{bold}}{{green}}Mysterious Forest{{font_reset}}",
@@ -116,7 +116,7 @@ game.addRoom({
 
 ### Adding Items
 
-```
+```js
 game.addItem({
     id: "torch",
     name: "{{yellow}}Wooden Torch{{color_reset}}",
@@ -137,7 +137,7 @@ game.addItem({
 
 ### Creating Characters
 
-```
+```js
 game.addCharacter({
     id: "old_man",
     name: "{{gray}}Old Man{{font_reset}}",
@@ -230,7 +230,7 @@ Command: quit / Aliases: exit / Purpose: Exit the game
 
 ### Custom Commands
 
-```
+```js
 game.registerCommand({
     name: "dance",
     aliases: ["boogie"],
@@ -247,7 +247,7 @@ game.registerCommand({
 ## Advanced Features
 ### Room Locking System
 
-```
+```js
 // Lock a room with a condition
 game.lockRoom("treasure_room", 
     (state) => state.inventory.includes("gold_key"),
@@ -269,7 +269,7 @@ game.addEvent({
 
 ### Plugin System
 
-```
+```js
 const myPlugin = {
     id: "magic-system",
     name: "Magic System",
@@ -302,7 +302,7 @@ LoreJS provides intelligent tab completion for:
 
 ### Character Interactions
 
-```
+```js
 // Basic conversation
 talk old_man
     
@@ -317,7 +317,7 @@ talk her about future
 ## Save System
 ### Manual Saving/Loading
 
-```
+```js
 // Save to specific slot
 game.saveGame("slot1");
     
@@ -334,7 +334,7 @@ game.deleteSave("slot1");
 ### Auto-save
 Enable automatic saving after each command:
 
-```
+```js
 const game = new LORE.Game({
     autosave: true  // Saves to 'autosave' slot
 });
@@ -343,7 +343,7 @@ const game = new LORE.Game({
 ## Novel Structure
 ### Complete Game Example
 
-```
+```js
 module.exports = {
     title: "The Great Adventure",
     startRoom: "start",
@@ -423,7 +423,7 @@ Method: loadPlugin / Description: Load extension
 
 LoreJS automatically detects and adapts to its environment:
 
-```
+```js
 if (Utils.isBrowser) {
     // Browser-specific setup
 } else if (Utils.isNode) {

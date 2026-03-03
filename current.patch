@@ -1,8 +1,8 @@
 diff --git a/index.html b/index.html
-index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..b908804b24f5d0b76539b22b995c1961642a0c04 100644
+index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..ac31eb258fd2514f8a4b69afdd746c0d499eb8bd 100644
 --- a/index.html
 +++ b/index.html
-@@ -195,50 +195,73 @@
+@@ -195,51 +195,52 @@
              width: 100vw;
              height: 100vh;
              position: relative;
@@ -28,30 +28,9 @@ index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..b908804b24f5d0b76539b22b995c1961
              height: 100%;
              position: relative;
          }
+-        
 +
-+        #intro-overlay {
-+            position: absolute;
-+            inset: 0;
-+            z-index: 30;
-+            display: flex;
-+            flex-direction: column;
-+            justify-content: center;
-+            gap: 24px;
-+            padding: 40px;
-+            background: rgba(0, 0, 0, 0.35);
-+            font-family: 'silver', sans-serif;
-+            color: #ffb000;
-+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
-+            line-height: 1.3;
-+            font-size: 2rem;
-+            box-sizing: border-box;
-+        }
 +
-+        #intro-overlay .intro-hint {
-+            font-size: 1.3rem;
-+            opacity: 0.85;
-+        }
-         
          #info-panel {
              width: 400px;
              height: 100%;
@@ -76,50 +55,8 @@ index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..b908804b24f5d0b76539b22b995c1961
              text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
          }
          .info-content {
-@@ -307,89 +330,102 @@
-                 padding: 10px !important;
-             }
-             .info-title {
-                 font-size: 1.5rem;
-             }
-             .info-content {
-                 font-size: 1.2rem;
-             }
-         }
-     </style>
- </head>
- <body class="mode-text">
-   <div id="menu-screen">
-     <div class="menu-header">TEXT ADVENTURE GAME SELECTION</div>
-     <div class="menu-list" id="menu-list">
-         <!-- Menu items will be injected here -->
-     </div>
-     <div class="menu-footer">
-         <div><span class="footer-key">↑↓</span> navigate</div>
-         <div><span class="footer-key">enter</span> play</div>
-     </div>
-   </div>
-   <aside class="graphics-window hidden">
-     <div id="game-main" style="flex: 1; display: flex; flex-direction: column; height: 100%;">
-         <div id="terminal-window" style="flex: 1;"></div>
-+        <div id="intro-overlay" class="hidden">
-+            <div id="intro-text"></div>
-+            <div class="intro-hint">Press SPACE to continue</div>
-+        </div>
-     </div>
-     <div class="vertical-line"></div>
-     <div id="info-panel">
-         <div class="info-title">Lemegeton</div>
-         <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 10px 0;">
-         <div class="info-content">
-             <p>Subject: Lemegeton</p>
-             <p>Status: <span style="color: #00ff00; text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;">Connected</span></p>
-             <p style="margin-top: 20px; font-size: 1.4rem; color: #ffb000; text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;">
-                 "The split between worlds is but a thin line."
-             </p>
-         </div>
-     </div>
-     <script src="node_modules/lorejs/lore.js"></script>
+             font-family: 'silver';
+@@ -346,50 +347,57 @@
      <script src="game/plugins.js"></script>
      <script src="game/rooms.js"></script>
      <script src="game/characters.js"></script>
@@ -130,8 +67,6 @@ index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..b908804b24f5d0b76539b22b995c1961
        const menuScreen = document.getElementById('menu-screen');
        const gameScreen = document.querySelector('.graphics-window');
        const menuList = document.getElementById('menu-list');
-+      const introOverlay = document.getElementById('intro-overlay');
-+      const introTextElement = document.getElementById('intro-text');
  
        const games = [
          { id: 'lemegeton', title: 'Lemegeton: The Journey to Apotheosis', time: '10:10', author: 'Amurox' },
@@ -179,7 +114,7 @@ index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..b908804b24f5d0b76539b22b995c1961
            } else if (e.key === 'Enter') {
              startGame(games[selectedIndex]);
              e.preventDefault();
-@@ -398,59 +434,91 @@
+@@ -398,59 +406,109 @@
        }
  
        // Add a test command to check selectFromList
@@ -216,34 +151,52 @@ index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..b908804b24f5d0b76539b22b995c1961
        }
  
 +      function playLemegetonIntroThenStart() {
-+        introOverlay.classList.remove('hidden');
-+
 +        let currentSegment = 0;
 +        let introText = '';
 +
-+        const renderIntro = () => {
-+          introTextElement.textContent = introText;
++        const setIntroInputLock = (locked) => {
++          const input = document.querySelector('.lore-input');
++          if (!input) {
++            return;
++          }
++
++          input.disabled = locked;
++          input.readOnly = locked;
++
++          if (locked) {
++            input.value = '';
++            input.blur();
++          } else {
++            input.focus();
++          }
 +        };
++
++        game.printLine('{{bold}}Lemegeton Invocation{{font_reset}}');
++        game.printLine('Press SPACE to continue...');
++        setIntroInputLock(true);
 +
 +        const handleIntroKeyDown = (e) => {
 +          if (e.code !== 'Space') {
++            if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
++              e.preventDefault();
++            }
 +            return;
 +          }
 +
 +          e.preventDefault();
++          e.stopPropagation();
 +
 +          introText += (introText ? ' ' : '') + lemegetonIntroSegments[currentSegment];
 +          currentSegment += 1;
-+          renderIntro();
++          game.printLine(introText);
 +
 +          if (currentSegment >= lemegetonIntroSegments.length) {
 +            window.removeEventListener('keydown', handleIntroKeyDown);
-+            introOverlay.classList.add('hidden');
++            setIntroInputLock(false);
 +            game.loadNovel(window.LemegetonNovel);
 +          }
 +        };
 +
-+        renderIntro();
 +        window.addEventListener('keydown', handleIntroKeyDown);
 +      }
 +
@@ -272,7 +225,7 @@ index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..b908804b24f5d0b76539b22b995c1961
                </div>`;
              }
              html += `<div class="menu-item ${options.length === currentChoice ? 'selected' : ''}" style="grid-template-columns: 50px 1fr;">
-@@ -486,26 +554,26 @@
+@@ -486,26 +544,26 @@
            window.addEventListener('keydown', handleChoiceKey);
            renderChoices();
          });

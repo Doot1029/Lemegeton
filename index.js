@@ -1,42 +1,61 @@
-const { chromium } = require('playwright');
-const path = require('path');
+const LORE = require("lorejs");
+const LemegetonNovel = require("./lemegeton.js");
+const fs = require("fs");
+const path = require("path");
 
-(async () => {
-    const browser = await chromium.launch({
-        args: ['--disable-web-security', '--allow-file-access-from-files']
+const game = new LORE.Game({
+  prompt: "{{bold}}{{cyan}}LEMEGETON{{color_reset}} > ",
+  typingSpeed: 20
+});
+
+async function start() {
+  const saves = getSaves();
+  const slots = Object.keys(saves);
+
+  game.printLine("{{bold}}{{yellow}}--- GAME MENU ---{{font_reset}}");
+  game.printLine("1. New Game");
+  
+  if (slots.length > 0) {
+    slots.forEach((slot, index) => {
+      const date = new Date(saves[slot].timestamp);
+      game.printLine(`${index + 2}. Load Slot: ${slot} - ${date.toLocaleString()}`);
     });
-    const page = await browser.newPage();
-    
-    // Set viewport size for a consistent screenshot
-    await page.setViewportSize({ width: 1280, height: 720 });
+  }
 
-    const filePath = 'file://' + path.resolve(__dirname, 'index.html');
-    
-    try {
-        await page.goto(filePath, { waitUntil: 'networkidle' });
-        
-        // Wait for menu screen or terminal
-        await page.waitForSelector('#menu-screen, .lore-terminal');
-        // Small additional wait to ensure novel is loaded and currentRoom is set
-        await page.waitForTimeout(5000);
-        
-        const screenshotPath = path.resolve(__dirname, 'ai-context/images/graphics-window.png');
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        console.log(`Menu screenshot saved to ${screenshotPath}`);
-
-        // Press Enter to start Lemegeton
-        await page.keyboard.press('Enter');
-        
-        // Wait for terminal output
-        await page.waitForSelector('.lore-output-line', { timeout: 5000 }).catch(() => {});
-        await page.waitForTimeout(2000);
-        
-        const gameScreenshotPath = path.resolve(__dirname, 'ai-context/images/gameplay.png');
-        await page.screenshot({ path: gameScreenshotPath, fullPage: true });
-        console.log(`Gameplay screenshot saved to ${gameScreenshotPath}`);
-    } catch (error) {
-        console.error('Error taking screenshot:', error);
-    } finally {
-        await browser.close();
+  game.rl.question("Select an option: ", async (answer) => {
+    const choice = parseInt(answer);
+    if (choice === 1) {
+      await game.loadNovel(LemegetonNovel);
+    } else if (choice >= 2 && choice <= slots.length + 1) {
+      const slot = slots[choice - 2];
+      game.state.flags.loadingSave = true;
+      await game.loadNovel(LemegetonNovel);
+      game.state.flags.loadingSave = false;
+      game.loadGame(slot);
+    } else {
+      game.printLine("Invalid option.");
+      start();
     }
-})();
+  });
+}
+
+function getSaves() {
+  const saves = {};
+  const saveDir = path.join(__dirname, "node_modules", "lorejs", "saves");
+  if (fs.existsSync(saveDir)) {
+    const files = fs.readdirSync(saveDir);
+    files.forEach(file => {
+      if (file.startsWith("save_") && file.endsWith(".json")) {
+        const slot = file.replace("save_", "").replace(".json", "");
+        const savePath = path.join(saveDir, file);
+        try {
+          const saveData = JSON.parse(fs.readFileSync(savePath, "utf8"));
+          saves[slot] = saveData;
+        } catch (e) {}
+      }
+    });
+  }
+  return saves;
+}
+
+start();
