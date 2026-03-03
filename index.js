@@ -1,5 +1,5 @@
 const LORE = require("lorejs");
-const LemegetonNovel = require("./lemegeton.js");
+const { LemegetonNovel, registerLemegetonExtensions } = require("./lemegeton.js");
 const fs = require("fs");
 const path = require("path");
 
@@ -26,10 +26,13 @@ async function start() {
     const choice = parseInt(answer);
     if (choice === 1) {
       await game.loadNovel(LemegetonNovel);
+      await registerLemegetonExtensions(game);
+      game.printLine(LemegetonNovel.introText);
     } else if (choice >= 2 && choice <= slots.length + 1) {
       const slot = slots[choice - 2];
       game.state.flags.loadingSave = true;
       await game.loadNovel(LemegetonNovel);
+      await registerLemegetonExtensions(game);
       game.state.flags.loadingSave = false;
       game.loadGame(slot);
     } else {

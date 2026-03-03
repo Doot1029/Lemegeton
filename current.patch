@@ -1,256 +1,415 @@
-diff --git a/index.html b/index.html
-index aaa987301eaad074a3c8bb881b263af8c1ec4dc7..ac31eb258fd2514f8a4b69afdd746c0d499eb8bd 100644
---- a/index.html
-+++ b/index.html
-@@ -195,51 +195,52 @@
-             width: 100vw;
-             height: 100vh;
-             position: relative;
-             background: linear-gradient(#a20000, #262626);
-             box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
-             display: flex;
-             flex-direction: row;
-             cursor: url('cursor.png');
-             box-sizing: border-box;
-             overflow: hidden;
-             margin: 0;
-             border: none;
-             border-radius: 0;
-         }
-         .vertical-line {
-             width: 3px;
-             background-color: rgba(255, 255, 255, 0.3);
-             height: 100%;
-             box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-         }
-         #terminal-window {
-             flex: 1;
-             height: 100%;
-             position: relative;
-         }
--        
+diff --git a/lemegeton.js b/lemegeton.js
+index 82419c2959ce5b1e8ab21ca22cc28c64709c8665..994440835076dc9607d7dcb3669c1d3af89b8b3d 100644
+--- a/lemegeton.js
++++ b/lemegeton.js
+@@ -1,29 +1,95 @@
+ const LemegetonPlugin = {
+   id: "lemegeton_plugin",
+   name: "Lemegeton Reading Plugin",
+   commands: [
++    {
++      name: "topics",
++      aliases: ["knowntopics"],
++      display: "topics [character]",
++      help: "Show known conversation topics for a character.",
++      fn: (args, engine) => {
++        if (args.length === 0) {
++          engine.printLine("Topics for whom? Use 'topics [character]'.");
++          return true;
++        }
 +
++        const room = engine.world.rooms.get(engine.state.currentRoom);
++        if (!room || !room.characters || room.characters.length === 0) {
++          engine.printLine("There's no one here to discuss topics with.");
++          return true;
++        }
 +
-         #info-panel {
-             width: 400px;
-             height: 100%;
-             padding: 60px 30px;
-             box-sizing: border-box;
-             display: flex;
-             flex-direction: column;
-             border-left: 2px solid rgba(255, 255, 255, 0.2);
-             background: rgba(0, 0, 0, 0.1);
-             overflow-y: auto;
-             -ms-overflow-style: none;
-             scrollbar-width: none;
++        const query = args.join(" ").toLowerCase();
++        const character = findCharacterInRoom(query, room, engine);
++        if (!character) {
++          engine.printLine("You don't see that person here.");
++          return true;
++        }
++
++        const knownTopics = getKnownTopics(engine.state, character.id);
++        const relationship = getRelationship(engine.state, character.id);
++
++        engine.printLine(`{{bold}}${character.name}{{font_reset}} relationship: {{yellow}}${relationship}{{color_reset}}`);
++        if (knownTopics.length === 0) {
++          engine.printLine("Known topics: none yet. Try 'talk [character] about [topic]' to discover one.");
++          return true;
++        }
++
++        engine.printLine(`Known topics: ${knownTopics.join(", ")}`);
++        return true;
++      }
++    },
++    {
++      name: "relationship",
++      aliases: ["relations", "relation"],
++      display: "relationship [character]",
++      help: "Show relationship status for a character.",
++      fn: (args, engine) => {
++        if (args.length === 0) {
++          engine.printLine("Relationship with whom? Use 'relationship [character]'.");
++          return true;
++        }
++
++        const room = engine.world.rooms.get(engine.state.currentRoom);
++        if (!room || !room.characters || room.characters.length === 0) {
++          engine.printLine("There's no one here to gauge your relationship with.");
++          return true;
++        }
++
++        const query = args.join(" ").toLowerCase();
++        const character = findCharacterInRoom(query, room, engine);
++        if (!character) {
++          engine.printLine("You don't see that person here.");
++          return true;
++        }
++
++        const relationship = getRelationship(engine.state, character.id);
++        engine.printLine(`Your relationship with ${character.name} is: {{yellow}}${relationship}{{color_reset}}`);
++        return true;
++      }
++    },
+     {
+       name: "read",
+       aliases: ["consult"],
+       help: "Read the Lemegeton grimoire. Use: 'read lemegeton', 'read page [number]', 'read next page', etc.",
+       fn: (args, engine) => {
+         const itemName = args.join(" ").toLowerCase();
+         const lemegeton = engine.world.items.get('lemegeton');
+         
+         if (!engine.state.inventory.includes('lemegeton')) {
+           engine.printLine("You are not carrying the Lemegeton.");
+           return true;
          }
-         #info-panel::-webkit-scrollbar {
-             display: none;
+ 
+         const book = lemegeton;
+         if (!book.state) {
+           book.state = { lastPage: 0, length: 50 };
          }
-         .info-title {
-             font-family: 'dungeon mode';
-             color: #ffb000;
-             font-size: 2rem;
-             margin-bottom: 10px;
-             text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
-         }
-         .info-content {
-             font-family: 'silver';
-@@ -346,50 +347,57 @@
-     <script src="game/plugins.js"></script>
-     <script src="game/rooms.js"></script>
-     <script src="game/characters.js"></script>
-     <script src="game/items.js"></script>
-     <script src="game/main.js"></script>
-     <script>
-       const game = new LORE.Game();
-       const menuScreen = document.getElementById('menu-screen');
-       const gameScreen = document.querySelector('.graphics-window');
-       const menuList = document.getElementById('menu-list');
  
-       const games = [
-         { id: 'lemegeton', title: 'Lemegeton: The Journey to Apotheosis', time: '10:10', author: 'Amurox' },
-         { id: 'theurgia', title: 'Theurgia: Celestial Path', time: '3:35', author: 'Theurgia' },
-         { id: 'goetia', title: 'Goetia: Abaddonian Depths', time: '4:44', author: 'Abaddon' },
-         { id: 'solomonis', title: 'Solomonis: The King\'s Ring', time: '4:21', author: 'Clavicula' },
-         { id: 'desdemona', title: 'Desdemona: The Masogire Arc', time: '7:01', author: 'Shadowbrook' },
-         { id: 'sith', title: 'Sith: The Sarcastic Feline', time: '5:23', author: 'Abaddon' },
-         { id: 'eden', title: 'Eden: A Fictional Paradise', time: '5:04', author: 'Kingdom' },
-         { id: 'forbidden', title: 'Forbidden: The Tree of Knowledge', time: '7:02', author: 'Eden' },
-         { id: 'apotheosis', title: 'Apotheosis: Armageddon', time: '3:27', author: 'The Zenith' },
-         { id: 'lucifer', title: 'Lucifer: Ruler of Earth', time: '7:00', author: 'Abaddon' }
-       ];
+         // Handle relative pages
+         if (itemName.includes("first page")) {
+           return readPage(1, engine, book);
+         } else if (itemName.includes("last page")) {
+           return readPage(book.state.length, engine, book);
+         } else if (itemName.includes("next page")) {
+           return readPage(book.state.lastPage + 1, engine, book);
+@@ -46,162 +112,297 @@ const LemegetonPlugin = {
  
-       let selectedIndex = 0;
-+      const lemegetonIntroSegments = [
-+        '[LEMEGETON_INTRO_1]',
-+        '[LEMEGETON_INTRO_2]',
-+        '[LEMEGETON_INTRO_3]',
-+        '[LEMEGETON_INTRO_4]',
-+        '[LEMEGETON_INTRO_5]'
-+      ];
- 
-       function renderMenu() {
-         menuList.innerHTML = games.map((game, index) => `
-           <div class="menu-item ${index === selectedIndex ? 'selected' : ''}">
-             <span class="item-number">${index + 1}</span>
-             <span class="item-title">${game.title}</span>
-             <span class="item-time">${game.time}</span>
-             <span class="item-author">${game.author}</span>
-           </div>
-         `).join('');
+         engine.printLine("Read what?");
+         return true;
        }
- 
-       function handleKeyDown(e) {
-         if (!menuScreen.classList.contains('hidden')) {
-           if (e.key === 'ArrowDown') {
-             selectedIndex = (selectedIndex + 1) % games.length;
-             renderMenu();
-             e.preventDefault();
-           } else if (e.key === 'ArrowUp') {
-             selectedIndex = (selectedIndex - 1 + games.length) % games.length;
-             renderMenu();
-             e.preventDefault();
-           } else if (e.key === 'Enter') {
-             startGame(games[selectedIndex]);
-             e.preventDefault();
-@@ -398,59 +406,109 @@
-       }
- 
-       // Add a test command to check selectFromList
-       game.registerCommand({
-         name: 'test',
-         help: 'Test the selection menu',
-         fn: async (args, engine) => {
-           const options = ['First Option', 'Second Option', 'Third Option'];
-           const choice = await engine.selectFromList('Choose a test option:', options);
-           if (choice !== -1) {
-             engine.printLine(`You selected: ${options[choice]}`);
-           } else {
-             engine.printLine('Selection cancelled.');
+     },
+     {
+       name: "delete",
+       display: "delete save [slot]",
+       help: "Delete a save slot.",
+       fn: (args, engine) => {
+         if (args[0] === "save" && args[1]) {
+           const slot = args[1];
+           const success = engine.deleteSave(slot);
+           if (success) {
+             engine.printLine(`{{red}}Refresh your browser for this to take effect.{{font_reset}}`);
            }
            return true;
          }
-       });
- 
-       function startGame(selectedGame) {
-         menuScreen.classList.add('hidden');
-         gameScreen.classList.remove('hidden');
-         
-         // Hide terminal input cursor/caret via CSS (already handled)
-         
-         if (selectedGame.id === 'lemegeton') {
--          game.loadNovel(window.LemegetonNovel);
-+          playLemegetonIntroThenStart();
-         } else {
-           // Placeholder for other games
-           game.printLine(`{{red}}Error: Game "${selectedGame.title}" data not found.{{font_reset}}`);
-           game.printLine(`{{yellow}}Only "Lemegeton" is playable in this build.{{font_reset}}`);
-           game.printLine(`{{bold}}Press Esc to return to menu.{{font_reset}}`);
-         }
+         engine.printLine("Delete what? Use 'delete save [slot]'.");
+         return true;
        }
+     }
+   ]
+ };
  
-+      function playLemegetonIntroThenStart() {
-+        let currentSegment = 0;
-+        let introText = '';
++const RELATIONSHIP_MODES = ["Romantic", "Friendly", "Neutral", "Mean", "Hostile"];
 +
-+        const setIntroInputLock = (locked) => {
-+          const input = document.querySelector('.lore-input');
-+          if (!input) {
-+            return;
-+          }
++function ensureCharacterState(state) {
++  if (!state.variables) {
++    state.variables = {};
++  }
++  if (!state.variables.knownTopics) {
++    state.variables.knownTopics = {};
++  }
++  if (!state.variables.relationships) {
++    state.variables.relationships = {};
++  }
++}
 +
-+          input.disabled = locked;
-+          input.readOnly = locked;
++function ensureCharacterTracking(state, characterId) {
++  ensureCharacterState(state);
++  if (!state.variables.knownTopics[characterId]) {
++    state.variables.knownTopics[characterId] = [];
++  }
++  if (!state.variables.relationships[characterId]) {
++    state.variables.relationships[characterId] = "Neutral";
++  }
++}
 +
-+          if (locked) {
-+            input.value = '';
-+            input.blur();
-+          } else {
-+            input.focus();
-+          }
-+        };
++function getKnownTopics(state, characterId) {
++  ensureCharacterTracking(state, characterId);
++  return state.variables.knownTopics[characterId];
++}
 +
-+        game.printLine('{{bold}}Lemegeton Invocation{{font_reset}}');
-+        game.printLine('Press SPACE to continue...');
-+        setIntroInputLock(true);
++function getRelationship(state, characterId) {
++  ensureCharacterTracking(state, characterId);
++  const relationship = state.variables.relationships[characterId];
++  return RELATIONSHIP_MODES.includes(relationship) ? relationship : "Neutral";
++}
 +
-+        const handleIntroKeyDown = (e) => {
-+          if (e.code !== 'Space') {
-+            if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
-+              e.preventDefault();
-+            }
-+            return;
-+          }
++function setRelationship(state, characterId, relationship) {
++  ensureCharacterTracking(state, characterId);
++  state.variables.relationships[characterId] = RELATIONSHIP_MODES.includes(relationship)
++    ? relationship
++    : "Neutral";
++}
 +
-+          e.preventDefault();
-+          e.stopPropagation();
++function unlockTopic(state, characterId, topic) {
++  const knownTopics = getKnownTopics(state, characterId);
++  if (!knownTopics.includes(topic)) {
++    knownTopics.push(topic);
++  }
++}
 +
-+          introText += (introText ? ' ' : '') + lemegetonIntroSegments[currentSegment];
-+          currentSegment += 1;
-+          game.printLine(introText);
++function findCharacterInRoom(query, room, engine) {
++  for (const characterId of room.characters) {
++    const character = engine.world.characters.get(characterId);
++    if (!character) {
++      continue;
++    }
++    if (character.name.toLowerCase().includes(query)) {
++      return character;
++    }
++    if (character.aliases && character.aliases.some((alias) => alias.toLowerCase().includes(query))) {
++      return character;
++    }
++  }
++  return null;
++}
 +
-+          if (currentSegment >= lemegetonIntroSegments.length) {
-+            window.removeEventListener('keydown', handleIntroKeyDown);
-+            setIntroInputLock(false);
-+            game.loadNovel(window.LemegetonNovel);
-+          }
-+        };
++function enableTopicDiscovery(character) {
++  if (!character.topics) {
++    return;
++  }
 +
-+        window.addEventListener('keydown', handleIntroKeyDown);
++  Object.entries(character.topics).forEach(([topicKey, topicData]) => {
++    if (topicKey === "random" || typeof topicData.dialog !== "function" || topicData.__tracksDiscovery) {
++      return;
++    }
++
++    const originalDialog = topicData.dialog;
++    topicData.dialog = (state, engine) => {
++      unlockTopic(state, character.id, topicKey);
++      if (topicData.relationship) {
++        setRelationship(state, character.id, topicData.relationship);
 +      }
++      return originalDialog(state, engine);
++    };
++    topicData.__tracksDiscovery = true;
++  });
++}
 +
-       window.addEventListener('keydown', handleKeyDown);
-       renderMenu();
++async function registerLemegetonExtensions(engine) {
++  await engine.loadPlugin(LemegetonPlugin);
++
++  const bartender = engine.world.characters.get("bartender");
++  if (bartender) {
++    enableTopicDiscovery(bartender);
++    ensureCharacterTracking(engine.state, bartender.id);
++  }
++}
++
+ function readPage(n, engine, book) {
+   if (n < 1) {
+     engine.printLine("The page numbering begins with 1.");
+     return true;
+   }
+   if (n > book.state.length) {
+     engine.printLine(`There are only ${book.state.length} pages in the book.`);
+     return true;
+   }
  
-       // Override selectFromList for retro-style navigation in-game
-       game.selectFromList = function(prompt, options) {
-         return new Promise((resolve) => {
-           this.printLine(prompt);
-           const menuId = 'game-choice-' + Date.now();
-           const choiceContainer = document.createElement('div');
-           choiceContainer.id = menuId;
-           choiceContainer.className = 'game-choice-container';
-           this.outputElement.appendChild(choiceContainer);
+   book.state.lastPage = n;
  
-           let currentChoice = 0;
-           const totalOptions = options.length + 1; // +1 for Cancel
+   if (n === 47) {
+     engine.printLine("Your eyes burn; your ears ring. Beneath your gaze, the dreadful sigils writhe, reminding you of that which lies outside the edges of the universe...");
+     engine.printLine("{{bold}}{{red}}You have lost your remaining sanity.{{font_reset}}");
+     setTimeout(() => {
+         engine.gameOver();
+     }, 2000);
+     return true;
+   }
  
-           const renderChoices = () => {
-             let html = '';
-             for (let i = 0; i < options.length; i++) {
-               html += `<div class="menu-item ${i === currentChoice ? 'selected' : ''}" style="grid-template-columns: 50px 1fr;">
-                 <span class="item-number">${i + 1}</span>
-                 <span class="item-title">${options[i]}</span>
-               </div>`;
-             }
-             html += `<div class="menu-item ${options.length === currentChoice ? 'selected' : ''}" style="grid-template-columns: 50px 1fr;">
-@@ -486,26 +544,26 @@
-           window.addEventListener('keydown', handleChoiceKey);
-           renderChoices();
-         });
-       };
+   const contents = {
+     1: "The first page contains the seal of Bael, the first king of the East.",
+     2: "Page 2 details the summoning of Agares, a duke who can make those who run stand still.",
+     10: "A diagram of the brass vessel used to contain the 72 spirits.",
+     13: "Faded ink describes the properties of the Ring of Solomonis.",
+     25: "A list of the planetary hours and their corresponding spirits.",
+     50: "The final page is covered in cryptic warnings about the Tree of Forbidden Knowledge."
+   };
  
-       function attachTerminalToMount() {
-         const terminal = document.querySelector('.lore-terminal');
-         const mount = document.getElementById('terminal-window');
-         if (terminal && mount) {
-           mount.appendChild(terminal);
-           terminal.style.position = 'relative';
-           terminal.style.width = '100%';
-           terminal.style.height = '100%';
-           terminal.style.top = '0';
-           terminal.style.left = '0';
-         } else {
-           // If terminal not found, try again shortly
-           setTimeout(attachTerminalToMount, 50);
+   if (contents[n]) {
+     engine.printLine(`You read:{{n}}{{is}}'${contents[n]}'{{fr}}`);
+   } else {
+     engine.printLine(`Page ${n} appears to be blank.`);
+   }
+   return true;
+ }
+ 
+ const LemegetonNovel = {
+   title: "Lemegeton: The Journey to Apotheosis",
+   startRoom: "tavern",
+-  onLoad: (engine) => {
+-    engine.loadPlugin(LemegetonPlugin);
+-    
+-    if (engine.state.flags.loadingSave) {
+-      return;
+-    }
+-
+-    // 4-paragraph intro
+-    engine.printLine(
+-      "In Eden, King Solomonis of the Kingdom of Clavicula forces humans and spirits alike to attend the annual battle of Apotheosis Armageddon—a battle where the main trophy is becoming a God, achieving the Zenith Rank. Every night, many demons lurk around Clavicula to steal souls, kill, and terrorize the townspeople. The Grand Creator remains silent, as faith on Earth and Eden dwindles under the rule of the dictator Lucifer.{{newline}}{{newline}}" +
+-      "Now, you find yourself at the beginning of your journey in the Special Lioness.{{newline}}{{newline}}" +
+-      "As you enter the tavern through the heavy, wooden door, you're welcomed by a pleasant atmosphere and laughing voices. The bartender is a little preoccupied, but still manages to welcome you with a friendly nod.{{newline}}{{newline}}" +
+-      "The tavern itself is packed. Soldiers seem to be the primary clientele here, which often leads to exciting evenings. Several long tables are occupied by locals, travellers, foreigners and anybody else who wishes to join. The other, smaller tables are also occupied by people who are indulging in great food and drinks, while some do try to strike a conversation, others can barely speak a word between eating what must be delicious food. Even most of the stools at the bar are occupied, though nobody seems to mind more company.{{newline}}{{newline}}" +
+-      "You did hear rumors about this tavern, supposedly it's famous for something, but you can't remember what for. Though judging by the amount of women in this tavern and the amount of them trying to subtly eye the bartender, it's probably his good looks and charm. You manage to find a seat and prepare for what will undoubtedbly be a great evening.{{newline}}{{newline}}"
+-      );
+-  },
++  introText:
++    "In Eden, King Solomonis of the Kingdom of Clavicula forces humans and spirits alike to attend the annual battle of Apotheosis Armageddon—a battle where the main trophy is becoming a God, achieving the Zenith Rank. Every night, many demons lurk around Clavicula to steal souls, kill, and terrorize the townspeople. The Grand Creator remains silent, as faith on Earth and Eden dwindles under the rule of the dictator Lucifer.{{n}}{{n}}" +
++    "Now, you find yourself at the beginning of your journey in the Special Lioness.{{n}}{{n}}" +
++    "As you enter the tavern through the heavy, wooden door, you're welcomed by a pleasant atmosphere and laughing voices. The bartender is a little preoccupied, but still manages to welcome you with a friendly nod.{{n}}{{n}}" +
++    "The tavern itself is packed. Soldiers seem to be the primary clientele here, which often leads to exciting evenings. Several long tables are occupied by locals, travellers, foreigners and anybody else who wishes to join. The other, smaller tables are also occupied by people who are indulging in great food and drinks, while some do try to strike a conversation, others can barely speak a word between eating what must be delicious food. Even most of the stools at the bar are occupied, though nobody seems to mind more company.{{n}}{{n}}" +
++    "You did hear rumors about this tavern, supposedly it's famous for something, but you can't remember what for. Though judging by the amount of women in this tavern and the amount of them trying to subtly eye the bartender, it's probably his good looks and charm. You manage to find a seat and prepare for what will undoubtedly be a great evening.{{n}}{{n}}",
+   rooms: [
+     {
+       id: "tavern",
+       name: "{{bold}}The Special Lioness{{font_reset}}",
+       description: "It's as alluring inside as it is on the outside. Tree logs support the upper floor and the ambient lights attached to them. The walls are decorated with sports memorabilia, it's clear the owner, and probably the customers, are avid fans.",
+       exits: {
+         north: "outside-tavern"
+       },
+       items: ["sigil", "lemegeton"],
+       characters: ["bartender"],
+     },
+     {
+       id: "outside-tavern",
+       name: "{{bold}}Outside of the Special Lioness{{font_reset}} (tavern)",
+       description: "From the outside it looks rustic, peaceful and delightful. Hardwooden planks and huge, stone pillars make up most of the building's outer structure. It's impossible to see through the darkened windows, but the enthusiastic noises from within can be felt outside.",
+       exits: {
+         south: "tavern"
+       }
+     },
+   ],
+   characters: [
+     {
+       id: "bartender",
+       name: "Bartender",
+       aliases: ["Oskar", "Barkeep", "Brewbeard", "Oskar Brewbeard"],
+       description: "A tall, burly man with a thick beard and a friendly smile. He seems to know everything that's going on in the Kingdom of Clavicula.",
+       topics: {
+         name: {
+           dialog: (state, engine) => {
+             engine.printLine("Bartender: 'The name's Oskar Brewbeard, friend. Best brew in all of Clavicula, or so they say.'");
+           }
+         },
+         rumors: {
+           aliases: ["news", "gossip"],
+           dialog: (state, engine) => {
+             engine.printLine("Bartender: 'Rumors? There's plenty of those. Some say the demons are getting bolder, others say King Solomonis is looking for something specific in the woods.'");
+           }
+         },
+         specialty: {
+           aliases: ["drink", "brew"],
++          relationship: "Friendly",
+           dialog: (state, engine) => {
+             engine.printLine("Bartender: 'My specialty is the Lioness Ale. It's got a kick that'll make even a demon think twice.'");
+           }
++        },
++        lucifer: {
++          aliases: ["dictator", "tyrant"],
++          relationship: "Mean",
++          dialog: (state, engine) => {
++            engine.printLine("Bartender: 'Lucifer's grip grows tighter every season. Speak too loudly about him and you'll vanish by dawn.'");
++          }
++        },
++        flirt: {
++          aliases: ["charm", "romance"],
++          relationship: "Romantic",
++          dialog: (state, engine) => {
++            engine.printLine("Bartender: 'Careful now, friend—compliments like that might earn you the first pour on the house.'");
++          }
++        },
++        insult: {
++          aliases: ["mock", "offend"],
++          relationship: "Hostile",
++          dialog: (state, engine) => {
++            engine.printLine("Bartender: 'Easy. Another word like that and you'll be drinking outside in the rain.'");
++          }
++        },
++        random: {
++          aliases: ["surprise"],
++          dialog: (state, engine) => {
++            const character = engine.world.characters.get("bartender");
++            const topicEntries = Object.entries(character.topics)
++              .filter(([key, value]) => key !== "random" && typeof value.dialog === "function");
++
++            if (topicEntries.length === 0) {
++              engine.printLine("Bartender scratches his beard, but no topic comes to mind.");
++              return;
++            }
++
++            const unknownTopics = topicEntries.filter(([key]) => !getKnownTopics(state, "bartender").includes(key));
++            const pool = unknownTopics.length > 0 ? unknownTopics : topicEntries;
++            const [pickedTopic] = pool[Math.floor(Math.random() * pool.length)];
++
++            engine.printLine(`Bartender: 'Let's go with {{yellow}}${pickedTopic}{{color_reset}}.'`);
++            engine.printLine("(Topic discovered through randomness.)");
++
++            character.topics[pickedTopic].dialog(state, engine);
++          }
          }
        }
+     }
+   ],
+   items: [
+     {
+       id: "sigil",
+       name: "metal sigil seal",
+       takeable: true,
+       description: "A metal sigil that pulses whenever action animations trigger.",
+       use: (engine) => {
+         engine.printLine("The sigil resonates with your command flow.");
+         return true;
+       }
+     },
+     {
+       id: "lemegeton",
+       name: "Lemegeton grimoire",
+       aliases: ["book", "grimoire", "lemegeton"],
+       takeable: true,
+       description: "An ancient grimoire containing forbidden knowledge of spirit summoning.",
+       use: (engine) => {
+         // Using the book triggers a random read
+         const book = engine.world.items.get("lemegeton");
+         const randomPage = Math.floor(Math.random() * (book.state?.length || 50)) + 1;
+         engine.printLine("You open the Lemegeton:");
+         return readPage(randomPage, engine, book);
+       }
+     }
+   ]
+ };
  
-       attachTerminalToMount();
-     </script>
-   </aside>
- </body>
--</html>
-\ No newline at end of file
-+</html>
+ if (typeof module !== "undefined" && module.exports) {
+-  module.exports = LemegetonNovel;
++  module.exports = {
++    LemegetonNovel,
++    registerLemegetonExtensions
++  };
+ } else if (typeof window !== "undefined") {
+   window.LemegetonNovel = LemegetonNovel;
++  window.registerLemegetonExtensions = registerLemegetonExtensions;
+ }

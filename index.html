@@ -411,10 +411,17 @@
         if (slotInfo.id !== 'new_game') {
           game.state.flags.loadingSave = true;
           await game.loadNovel(window.LemegetonNovel);
+          if (typeof window.registerLemegetonExtensions === 'function') {
+            await window.registerLemegetonExtensions(game);
+          }
           game.state.flags.loadingSave = false;
           game.loadGame(slotInfo.id);
         } else {
           await game.loadNovel(window.LemegetonNovel);
+          if (typeof window.registerLemegetonExtensions === 'function') {
+            await window.registerLemegetonExtensions(game);
+          }
+          game.printLine(window.LemegetonNovel.introText);
         }
         
         // Removed redundant game.start() call
