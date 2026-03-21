@@ -1,5 +1,28 @@
 # LoreJS Update Summary
 
+## Version: 1.2.4
+
+### Changes:
+- **Default Talk Responses**: Added bespoke default `talk <character>` responses for every Clavicula character so each NPC now reacts even when no topic is specified.
+- **Expanded Topic Coverage**: Gave each existing Clavicula character a broader mix of conversation topics covering characters, objects, locations, and concepts.
+- **Random Topic Conversations**: Updated the talk system so `talk <character> about random` picks an available topic, prints a character-flavored intro line, and then delivers that topic's dialogue.
+
+### Commit Message Ideas:
+- `feat: add default talk dialogue for Clavicula characters`
+- `feat: support random talk topics in LoreJS conversations`
+- `lore: expand Clavicula NPC topics across characters objects and locations`
+
+## Version: 1.2.3
+
+### Changes:
+- **Room Exit Summaries**: Added automatic exit summaries to every Clavicula room description so each location now tells players exactly which directions lead where.
+- **Dynamic Destination Names**: Exit text is generated from the room graph itself, keeping descriptions aligned with room names without manually duplicating every destination.
+
+### Commit Message Ideas:
+- `feat: add exit summaries to Clavicula room descriptions`
+- `refactor: generate Clavicula room exits from room metadata`
+- `ux: show room destinations in Clavicula descriptions`
+
 ## Version: 1.2.2
 
 ### Changes:

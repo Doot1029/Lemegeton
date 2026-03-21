@@ -358,56 +358,139 @@ const ClaviculaRooms = [
   }
 ];
 
+
+const formatRoomLabel = (roomId, roomNamesById) => {
+    if (roomNamesById[roomId]) {
+        return roomNamesById[roomId];
+    }
+
+    return roomId
+        .split("_")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+};
+
+const formatRoomExitSummary = (room, roomNamesById) => {
+    if (!room.exits || Object.keys(room.exits).length === 0) {
+        return room.description;
+    }
+
+    const exitDetails = Object.entries(room.exits).map(([direction, roomId]) => {
+        const destination = formatRoomLabel(roomId, roomNamesById);
+        return `${direction} to ${destination}`;
+    });
+
+    const exitSummary = exitDetails.length === 1
+        ? exitDetails[0]
+        : `${exitDetails.slice(0, -1).join(", ")}, and ${exitDetails[exitDetails.length - 1]}`;
+
+    return `${room.description} Exits: ${exitSummary}.`;
+};
+
+const ClaviculaRoomNamesById = Object.fromEntries(
+    ClaviculaRooms.map((room) => [room.id, room.name.replace(/\{\{[^}]+\}\}/g, "")])
+);
+
+ClaviculaRooms.forEach((room) => {
+    room.description = formatRoomExitSummary(room, ClaviculaRoomNamesById);
+});
+
+const createTopic = (category, label, line, aliases = []) => ({
+    category,
+    label,
+    aliases,
+    dialog: (state, engine) => engine.printLine(line)
+});
+
 const ClaviculaCharacters = [
     {
         id: "king_solomonis",
         name: "King Solomonis",
+        shortName: "Solomonis",
         description: "A man of terrifying presence, draped in robes of midnight and bone. His eyes see everything.",
+        talk: (state, engine) => engine.printLine("Solomonis folds his hands over the throne arm. 'Speak, cultist. If your words carry weight, I may answer.'"),
+        randomTopicIntro: (topicLabel) => `Solomonis tilts his head. "Hm, let us go with ${topicLabel}."`,
         topics: {
-            cult: { dialog: (s, e) => e.printLine("Solomonis: 'The cult is but a means to an end, commoner. Do not question the shepherd.'") },
-            demons: { dialog: (s, e) => e.printLine("Solomonis: 'They are tools. Dangerous, but effective if one has the will to command them.'") }
+            valerius: createTopic("character", "Valerius", "Solomonis: 'Valerius still mistakes obedience for virtue. That makes him useful.'", ["high priest", "priest"]),
+            brass_ring: createTopic("object", "the brass ring", "Solomonis: 'That ring is a leash, a seal, and a promise. Wear it only if you intend to be bound.'", ["ring"]),
+            throne_room: createTopic("location", "the throne room", "Solomonis: 'This throne room is the heart that keeps Clavicula beating, no matter how diseased the blood becomes.'", ["throne", "castle"]),
+            cult: createTopic("concept", "the cult", "Solomonis: 'The cult is but a means to an end, commoner. Do not question the shepherd.'", ["cultists"]),
+            demons: createTopic("concept", "demons", "Solomonis: 'They are tools. Dangerous, but effective if one has the will to command them.'", ["devils", "night-terrors"])
         }
     },
     {
         id: "high_priest_valerius",
         name: "High Priest Valerius",
+        shortName: "Valerius",
         description: "A weary man in gold-trimmed robes. He smells of holy oil and regret.",
+        talk: (state, engine) => engine.printLine("Valerius bows his head for a moment. 'If you seek counsel, ask plainly. We have little time and less mercy.'"),
+        randomTopicIntro: (topicLabel) => `Valerius steadies his breath. "Hm, let's go with ${topicLabel}."`,
         topics: {
-            protection: { dialog: (s, e) => e.printLine("Valerius: 'The demons are hungry. My wards are the only thing keeping your soul in your body.'") },
-            king: { dialog: (s, e) => e.printLine("Valerius: 'The King... he has his reasons. We all have our cross to bear.'") }
+            solomonis: createTopic("character", "King Solomonis", "Valerius: 'The King walks too close to the abyss, yet I remain because someone must keep the people from falling in with him.'", ["king", "solomonis"]),
+            holy_salt: createTopic("object", "holy salt", "Valerius: 'Holy salt draws a clean boundary. Demons loathe boundaries they did not choose.'", ["salt", "blessed salt"]),
+            cathedral: createTopic("location", "the cathedral", "Valerius: 'This sanctum is one of the few places in Clavicula where prayer still sounds like prayer.'", ["sanctum", "church"]),
+            protection: createTopic("concept", "protection", "Valerius: 'The demons are hungry. My wards are the only thing keeping your soul in your body.'", ["wards", "safety"]),
+            faith: createTopic("concept", "faith", "Valerius: 'Faith is not comfort. It is the choice to keep the candle lit while the dark begs you to blink.'", ["belief"])
         }
     },
     {
         id: "blind_beggar",
         name: "The Blind Beggar",
+        shortName: "Beggar",
         description: "His eyes are milky white, but he follows your movements perfectly.",
+        talk: (state, engine) => engine.printLine("The beggar smiles at empty air. 'Coins are for the hungry. Words are for the doomed. Which are you offering me?'"),
+        randomTopicIntro: (topicLabel) => `The beggar chuckles softly. "Hm, let's go with ${topicLabel}."`,
         topics: {
-            eyes: { dialog: (s, e) => e.printLine("Beggar: 'I don't need eyes to see the shadows that dance behind you, cultist.'") },
-            stalker: { dialog: (s, e) => e.printLine("Beggar: 'He's been waiting for you on the Shrouded Path for a long time.'") }
+            stalker: createTopic("character", "the Stalker", "Beggar: 'He's been waiting for you on the Shrouded Path for a long time. He likes people who already belong to fear.'", ["stalker", "shadow"]),
+            silver_bell: createTopic("object", "the silver bell", "Beggar: 'Ring silver in this city and the dead listen first. The living only hear the echo.'", ["bell"]),
+            gallows_square: createTopic("location", "Gallows Square", "Beggar: 'Every road in Clavicula eventually remembers Gallows Square. That is how the city keeps score.'", ["square", "gallows"]),
+            eyes: createTopic("concept", "eyes", "Beggar: 'I don't need eyes to see the shadows that dance behind you, cultist.'", ["sight", "vision"]),
+            fate: createTopic("concept", "fate", "Beggar: 'Fate is only another beggar here. It rattles its cup and hopes the dark notices.'", ["destiny"])
         }
     },
     {
         id: "the_executioner",
         name: "The Executioner",
+        shortName: "Executioner",
         description: "A hulking figure in a blood-stained hood. He sharpens his axe with rhythmic, metallic scrapes.",
+        talk: (state, engine) => engine.printLine("The Executioner drags a thumb along the edge of his axe. 'Ask. I prefer answers to screaming.'"),
+        randomTopicIntro: (topicLabel) => `The Executioner rolls his shoulders. "Hm. Let's go with ${topicLabel}."`,
         topics: {
-            gallows: { dialog: (s, e) => e.printLine("Executioner: 'Everyone has their turn on the rope. Yours is coming.'") }
+            solomonis: createTopic("character", "King Solomonis", "Executioner: 'The King gives the order. I give the ending. That is the whole arrangement.'", ["king", "solomonis"]),
+            axe: createTopic("object", "the axe", "Executioner: 'A clean blade is a kindness. People never appreciate kindness when it is this sharp.'", ["weapon", "blade"]),
+            gallows: createTopic("location", "the gallows", "Executioner: 'Everyone has their turn on the rope. Yours is coming.'", ["gallows square", "square"]),
+            justice: createTopic("concept", "justice", "Executioner: 'Justice is what people call it when the blood falls on someone else.'", ["law"]),
+            death: createTopic("concept", "death", "Executioner: 'Death is the easiest part of my work. Waiting is what breaks people.'", ["dying"])
         }
     },
     {
         id: "the_inquisitor",
         name: "The Inquisitor",
+        shortName: "Inquisitor",
         description: "A man whose skin is pulled too tight over his skull. He carries a tray of silver needles.",
+        talk: (state, engine) => engine.printLine("The Inquisitor lines up his needles with loving precision. 'Confession begins with a question. Go on.'"),
+        randomTopicIntro: (topicLabel) => `The Inquisitor smiles without warmth. "Hm, let's go with ${topicLabel}."`,
         topics: {
-            conversion: { dialog: (s, e) => e.printLine("Inquisitor: 'Pain is the most efficient teacher. Are you ready for your next lesson?'") }
+            solomonis: createTopic("character", "King Solomonis", "Inquisitor: 'Solomonis understands that truth enters the body more reliably through pain than through prayer.'", ["king", "solomonis"]),
+            needles: createTopic("object", "the silver needles", "Inquisitor: 'Silver remembers every nerve it has kissed. That is why I keep it polished.'", ["needle", "tools"]),
+            torture_chambers: createTopic("location", "the torture chambers", "Inquisitor: 'These chambers are classrooms. The lessons simply happen to scream.'", ["chambers", "dungeon"]),
+            conversion: createTopic("concept", "conversion", "Inquisitor: 'Pain is the most efficient teacher. Are you ready for your next lesson?'", ["convert", "indoctrination"]),
+            pain: createTopic("concept", "pain", "Inquisitor: 'Pain strips away the lies people tell themselves. Whatever remains is wonderfully obedient.'", ["agony"])
         }
     },
     {
         id: "the_stalker",
         name: "The Stalker",
+        shortName: "Stalker",
         description: "A flickering shadow that never quite stays in your peripheral vision.",
+        talk: (state, engine) => engine.printLine("The Stalker circles just beyond your sight. 'You can speak if you like. I have been listening since before you arrived.'"),
+        randomTopicIntro: (topicLabel) => `The Stalker's voice slips through the fog. "Hm, let's go with ${topicLabel}."`,
         topics: {
-            pursuit: { dialog: (s, e) => e.printLine("Stalker: 'I am the breath on the back of your neck. I am the reason you run.'") }
+            solomonis: createTopic("character", "Solomonis", "Stalker: 'The King opened the door. I merely enjoy what walks through after him.'", ["king", "solomonis"]),
+            masks: createTopic("object", "the masks", "Stalker: 'Masks are merciful. Faces tell the truth too early.'", ["mask"]),
+            shrouded_path: createTopic("location", "the Shrouded Path", "Stalker: 'Every bend in the path was shaped by someone trying to flee me. None of them improved it.'", ["path", "trail"]),
+            pursuit: createTopic("concept", "pursuit", "Stalker: 'I am the breath on the back of your neck. I am the reason you run.'", ["hunting", "chase"]),
+            fear: createTopic("concept", "fear", "Stalker: 'Fear is a lantern people carry for me. It makes them so easy to follow.'", ["terror"])
         }
     }
     // ... more NPCs to be added
