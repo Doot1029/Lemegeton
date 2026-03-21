@@ -358,6 +358,61 @@ const ClaviculaRooms = [
   }
 ];
 
+const findRoom = (roomId) => ClaviculaRooms.find((room) => room.id === roomId);
+const ensureExit = (roomId, direction, destinationId) => {
+    const room = findRoom(roomId);
+    if (!room) {
+        return;
+    }
+
+    room.exits = room.exits || {};
+    room.exits[direction] = destinationId;
+};
+
+const ensureRoom = (room) => {
+    if (!findRoom(room.id)) {
+        ClaviculaRooms.push(room);
+    }
+};
+
+ensureRoom({
+    id: "castle_gate",
+    name: "The Castle Gate",
+    description: "A wedge of black iron and sharpened portcullis teeth divides the royal quarter from the common streets. The guards never blink, even when the wind cuts through them.",
+    exits: { south: "gallows_square", north: "hall_of_echoes", out: "ashen_graveyard" }
+});
+
+ensureRoom({
+    id: "sewer_grate",
+    name: "The Sewer Grate",
+    description: "A rusted iron grate yawns beneath Market Row. Filthy runoff trickles down the ladder into the city's buried arteries.",
+    exits: { north: "market_row", down: "thieves_hideout", west: "sewer_entrance" }
+});
+
+ensureRoom({
+    id: "sewer_entrance",
+    name: "The Sewer Entrance",
+    description: "A cramped service junction where the castle's waste tunnels meet older catacomb stone. A draft carries incense from one direction and rot from the other.",
+    exits: { up: "torture_chambers", east: "passage_penance", south: "sewer_grate", in: "initiation_chamber" }
+});
+
+ensureExit("gallows_square", "north", "castle_gate");
+ensureExit("market_row", "south", "sewer_grate");
+ensureExit("torture_chambers", "down", "sewer_entrance");
+ensureExit("passage_penance", "out", "sewer_entrance");
+ensureExit("thieves_hideout", "up", "sewer_grate");
+ensureExit("grand_ballroom", "west", "hidden_sacristy");
+ensureExit("market_row", "down", "alchemist_vapor");
+ensureExit("alchemist_vapor", "up", "market_row");
+ensureExit("market_row", "in", "coin_counter_booth");
+ensureExit("coin_counter_booth", "out", "market_row");
+ensureExit("thieves_hideout", "south", "weeping_wall");
+ensureExit("weeping_wall", "north", "thieves_hideout");
+ensureExit("cathedral_entrance", "north", "index_of_sins");
+ensureExit("index_of_sins", "west", "cathedral_entrance");
+ensureExit("initiation_chamber", "out", "sewer_entrance");
+ensureExit("ashen_graveyard", "in", "castle_gate");
+
 
 const formatRoomLabel = (roomId, roomNamesById) => {
     if (roomNamesById[roomId]) {
@@ -400,6 +455,45 @@ const createTopic = (category, label, line, aliases = []) => ({
     label,
     aliases,
     dialog: (state, engine) => engine.printLine(line)
+});
+
+const createCharacter = ({
+    id,
+    name,
+    shortName,
+    description,
+    talkLine,
+    randomTopicIntro,
+    aliases = [],
+    genre = "unknown",
+    topics = {}
+}) => ({
+    id,
+    name,
+    shortName,
+    aliases,
+    genre,
+    description,
+    talk: (state, engine) => engine.printLine(talkLine),
+    randomTopicIntro: randomTopicIntro || ((topicLabel) => `${shortName || name} studies you for a moment. "Let's speak of ${topicLabel}."`),
+    topics
+});
+
+const createItem = ({ id, name, aliases = [], description, takeable = true, useLine, onUse }) => ({
+    id,
+    name,
+    aliases,
+    takeable,
+    description,
+    use: (state, engine) => {
+        if (typeof useLine === "string" && useLine.length > 0) {
+            engine.printLine(useLine);
+        }
+        if (typeof onUse === "function") {
+            return onUse(state, engine);
+        }
+        return true;
+    }
 });
 
 const ClaviculaCharacters = [
@@ -492,8 +586,179 @@ const ClaviculaCharacters = [
             pursuit: createTopic("concept", "pursuit", "Stalker: 'I am the breath on the back of your neck. I am the reason you run.'", ["hunting", "chase"]),
             fear: createTopic("concept", "fear", "Stalker: 'Fear is a lantern people carry for me. It makes them so easy to follow.'", ["terror"])
         }
-    }
-    // ... more NPCs to be added
+    },
+    createCharacter({
+        id: "faceless_waltz",
+        name: "The Faceless Waltz",
+        shortName: "Faceless Waltz",
+        aliases: ["dancer", "dancers", "waltz"],
+        genre: "female",
+        description: "A pair of noble figures turning in slow circles. Their masks are smooth where faces should be.",
+        talkLine: "The dancers never stop. One inclines a blank face toward you. 'Keep time, and the floor may forgive you.'",
+        randomTopicIntro: (topicLabel) => `The orchestra swells without musicians. "Very well," sighs the faceless pair. "Let us dance around ${topicLabel}."`,
+        topics: {
+            solomonis: createTopic("character", "Solomonis", "Faceless Waltz: 'He taught the court to smile after the music died.'", ["king", "solomonis"]),
+            ballroom: createTopic("location", "the ballroom", "Faceless Waltz: 'No guest ever truly leaves this floor. Some only become part of the rhythm.'", ["dance floor", "grand ballroom"]),
+            masks: createTopic("object", "the masks", "Faceless Waltz: 'Our masks spare you the grief of seeing what devotion cost us.'", ["mask"]),
+            music: createTopic("concept", "music", "Faceless Waltz: 'You hear violins. We hear chains being drawn across silk.'", ["song"]),
+            blood: createTopic("concept", "blood", "Faceless Waltz: 'The stains help us keep our steps.'", ["stains"])
+        }
+    }),
+    createCharacter({
+        id: "puppet_guard",
+        name: "The Puppet Guard",
+        shortName: "Puppet Guard",
+        aliases: ["guard", "soldier", "puppet"],
+        genre: "male",
+        description: "A castle guard with lacquered eyes and twitching hands. Fine wire disappears into the shadows above him.",
+        talkLine: "The guard jerks to attention. 'State your business before the strings decide it for you.'",
+        topics: {
+            solomonis: createTopic("character", "Solomonis", "Puppet Guard: 'The King only had to pull once. The rest of us learned to move on our own.'", ["king"]),
+            barracks: createTopic("location", "the barracks", "Puppet Guard: 'We sleep here standing up. Easier for the strings to keep hold of us.'", ["guard barracks"]),
+            strings: createTopic("concept", "the strings", "Puppet Guard: 'Do not look up. It is better not to know who is holding them.'", ["wires"]),
+            ale: createTopic("object", "the ale", "Puppet Guard: 'Stale enough to drown memory, not strong enough to drown obedience.'", ["beer"]),
+            duty: createTopic("concept", "duty", "Puppet Guard: 'Duty is what remains after a man has misplaced his will.'", ["orders"])
+        }
+    }),
+    createCharacter({
+        id: "hell_iron_smith",
+        name: "The Hell-Iron Smith",
+        shortName: "Smith",
+        aliases: ["smith", "blacksmith"],
+        genre: "male",
+        description: "A broad-shouldered smith with burn scars like branching script along his arms.",
+        talkLine: "The smith hammers once, showering red sparks. 'Speak loudly. The metal screams louder.'",
+        topics: {
+            hell_iron: createTopic("object", "hell-iron", "Smith: 'It bleeds because every blade remembers the hand that first forged it in fear.'", ["metal", "iron"]),
+            market_row: createTopic("location", "Market Row", "Smith: 'This row sells lies, rot, and iron. Mine is the only honest trade.'", ["market"]),
+            solomonis: createTopic("character", "Solomonis", "Smith: 'The King commissions chains more often than plows. That tells you enough.'", ["king"]),
+            furnace: createTopic("object", "the furnace", "Smith: 'Feed it coal and it howls. Feed it bone and it sings.'", ["forge"]),
+            weapons: createTopic("concept", "weapons", "Smith: 'Every weapon in Clavicula is a confession waiting for a hand.'", ["blades"])
+        }
+    }),
+    createCharacter({
+        id: "soul_broker",
+        name: "The Soul Broker",
+        shortName: "Broker",
+        aliases: ["broker", "coin counter", "merchant"],
+        genre: "male",
+        description: "A hunched clerk with ink-black fingernails and a scale made from finger bones.",
+        talkLine: "The broker weighs a glowing shard. 'Everything has value. Most things have a buyer. Ask your question.'",
+        topics: {
+            shards: createTopic("object", "soul shards", "Soul Broker: 'Some people save coin. Here, we save brighter things.'", ["coins", "currency"]),
+            market_row: createTopic("location", "Market Row", "Soul Broker: 'The market is loud so no one hears what they are really selling.'", ["market"]),
+            beggar: createTopic("character", "the Blind Beggar", "Soul Broker: 'He asks for alms. I ask for portions. We serve the same hunger.'", ["blind beggar", "beggar"]),
+            debt: createTopic("concept", "debt", "Soul Broker: 'Debt is the truest leash in Clavicula. Even the dead keep paying.'", ["owing"]),
+            scales: createTopic("object", "the scales", "Soul Broker: 'These scales never tip by accident. Only by design.'", ["balance"])
+        }
+    }),
+    createCharacter({
+        id: "mad_scribe",
+        name: "The Mad Scribe",
+        shortName: "Scribe",
+        aliases: ["scribe", "writer"],
+        genre: "male",
+        description: "His fingers are stained black to the knuckle, and his lips move as if copying unheard dictation.",
+        talkLine: "The scribe scratches another line into the wall. 'If I stop writing, it starts speaking louder.'",
+        topics: {
+            index: createTopic("location", "the Index of Sins", "Mad Scribe: 'Every lie, every theft, every thought—they catalogue them until the paper groans.'", ["index", "sins"]),
+            ink: createTopic("object", "ink", "Mad Scribe: 'The good ink ran out years ago. Now the city writes in blood and tree-sap.'", ["writing"]),
+            lemegeton: createTopic("object", "the Lemegeton", "Mad Scribe: 'Some books are read. That one reads back.'", ["book", "grimoire"]),
+            watchers: createTopic("concept", "the watchers", "Mad Scribe: 'He is watching, yes—but so are the pages. The pages are worse.'", ["watching"]),
+            names: createTopic("concept", "names", "Mad Scribe: 'A name pinned to paper is halfway to a curse.'", ["records"])
+        }
+    }),
+    createCharacter({
+        id: "bile_leviathan",
+        name: "The Bile Leviathan",
+        shortName: "Leviathan",
+        aliases: ["leviathan", "beast"],
+        description: "Something vast drifts under the black surface, outlined only by oily swells and glints of teeth.",
+        talkLine: "A wet, cavernous voice rises from the reservoir. 'Little cultist. You stand so close to the water.'",
+        topics: {
+            sewers: createTopic("location", "the sewers", "Leviathan: 'The city empties its filth here. I have become an expert in its appetite.'", ["sludge reservoir", "reservoir"]),
+            hunger: createTopic("concept", "hunger", "Leviathan: 'Hunger is the only honest prayer I hear down here.'", ["feeding"]),
+            solomonis: createTopic("character", "Solomonis", "Leviathan: 'He built above while I grew below. We are both monuments to excess.'", ["king"]),
+            bile: createTopic("object", "the bile", "Leviathan: 'Do not touch it unless you wish to remember every meal this city regrets.'", ["sludge"]),
+            drowned: createTopic("character", "the Drowned", "Leviathan: 'They scratch at their coffins like minnows at a hull.'", ["drowned"])
+        }
+    }),
+    createCharacter({
+        id: "rat_king",
+        name: "The Rat King",
+        shortName: "Rat King",
+        aliases: ["rats", "rat", "king"],
+        description: "A mass of rats knotted together by their tails, all blinking in different rhythms.",
+        talkLine: "A chorus of tiny mouths answers at once. 'Ask quickly. Consensus is expensive.'",
+        topics: {
+            sewers: createTopic("location", "the sewers", "Rat King: 'Below every palace is a pantry. We know them all.'", ["nest", "rat nest"]),
+            scraps: createTopic("object", "scraps", "Rat King: 'The city throws away more truth than food.'", ["food"]),
+            solomonis: createTopic("character", "Solomonis", "Rat King: 'Even kings leave crumbs. That is why kings never last.'", ["king solomonis", "solomonis"]),
+            plague: createTopic("concept", "plague", "Rat King: 'People blame us for every fever. We only carry what they breed.'", ["sickness"]),
+            whispers: createTopic("concept", "whispers", "Rat King: 'Walls are generous to small ears.'", ["secrets"])
+        }
+    }),
+    createCharacter({
+        id: "the_drowned",
+        name: "The Drowned",
+        shortName: "Drowned",
+        aliases: ["drowned", "corpse", "dead"],
+        description: "Pale figures drift between the floating coffins, trailing funeral cloth through the water.",
+        talkLine: "Water pours from a ruined mouth. 'We were buried twice and neither time took.'",
+        topics: {
+            crypt: createTopic("location", "the crypt", "The Drowned: 'The coffins are only boats now, and poor ones at that.'", ["flooded crypt", "coffins"]),
+            water: createTopic("object", "the water", "The Drowned: 'It remembers each name spoken over it, then keeps them.'", ["flood"]),
+            leviathan: createTopic("character", "the Leviathan", "The Drowned: 'It listens when we sing. That is more courtesy than the living showed us.'", ["bile leviathan"]),
+            burial: createTopic("concept", "burial", "The Drowned: 'A city this rotten cannot keep anything properly buried.'", ["graves"]),
+            escape: createTopic("concept", "escape", "The Drowned: 'Even when we float free, the city still has us by the ankles.'", ["leave"])
+        }
+    }),
+    createCharacter({
+        id: "grave_wight",
+        name: "The Grave Wight",
+        shortName: "Wight",
+        aliases: ["wight", "gravekeeper", "grave"],
+        description: "A tall corpse in funeral wrappings, standing perfectly still among the ash-coated stones.",
+        talkLine: "The wight inclines its head with brittle courtesy. 'Choose your words carefully. The dead are listening.'",
+        topics: {
+            graveyard: createTopic("location", "the graveyard", "Grave Wight: 'These graves were emptied by memory long before they were emptied by hand.'", ["ashen graveyard", "cemetery"]),
+            names: createTopic("concept", "forgotten names", "Grave Wight: 'A blank headstone is not mercy. It is erasure.'", ["headstones"]),
+            gate: createTopic("location", "the iron gate", "Grave Wight: 'The gate keeps bodies out and regret in.'", ["iron gate"]),
+            crows: createTopic("character", "the crows", "Grave Wight: 'They dine on the eyes first. That is why they see so much.'", ["crow gallows", "crows"]),
+            ash: createTopic("object", "the ash", "Grave Wight: 'Taste it and you will know whose prayers burned.'", ["dust"])
+        }
+    }),
+    createCharacter({
+        id: "old_man_kael",
+        name: "Old Man Kael",
+        shortName: "Kael",
+        aliases: ["kael", "hermit", "old man"],
+        genre: "male",
+        description: "A ragged hermit clutching prayer knots and a cracked lantern.",
+        talkLine: "Kael startles, then squints at you. 'You aren't with the Stalker, are you? Good. Ask what you came to ask.'",
+        topics: {
+            stalker: createTopic("character", "the Stalker", "Kael: 'Never answer when it calls from the fog. The second answer is the one that binds you.'", ["shadow"]),
+            well: createTopic("location", "the Whispering Well", "Kael: 'It tells the truth, but truth in Clavicula always costs more than lies.'", ["well"]),
+            fruit: createTopic("object", "the charred fruit", "Kael: 'Eat it only if you are desperate. It fills the belly and empties the dreams.'", ["charred fruit"]),
+            shack: createTopic("location", "the shack", "Kael: 'It leaks, creaks, and keeps me alive. That is enough to earn my gratitude.'", ["hut"]),
+            survival: createTopic("concept", "survival", "Kael: 'Out here, survival is mostly learning which whispers to ignore.'", ["living"])
+        }
+    }),
+    createCharacter({
+        id: "night_terror",
+        name: "The Night-Terror",
+        shortName: "Night-Terror",
+        aliases: ["terror", "night terror", "rift"],
+        description: "A silhouette at the edge of the rift, made of absence rather than flesh.",
+        talkLine: "The darkness beyond the rift folds inward. 'You have come far enough to be afraid properly.'",
+        topics: {
+            rift: createTopic("location", "the Void Rift", "Night-Terror: 'This wound in the world does not heal. It only learns to open wider.'", ["void", "rift"]),
+            solomonis: createTopic("character", "Solomonis", "Night-Terror: 'He mistook proximity for mastery. Humans make that mistake beautifully.'", ["king"]),
+            ink: createTopic("object", "living ink", "Night-Terror: 'The tree bleeds memory. I drink what memory leaves behind.'", ["living ink", "tree sap"]),
+            sleep: createTopic("concept", "sleep", "Night-Terror: 'Sleep is simply the door you keep forgetting you opened for me.'", ["dreams"]),
+            truth: createTopic("concept", "truth", "Night-Terror: 'Truth is what remains when the last comforting lie chokes to death.'", ["revelation"])
+        }
+    })
 ];
 
 const ClaviculaItems = [
@@ -517,7 +782,128 @@ const ClaviculaItems = [
             engine.printLine("The ring vibrates. You feel a connection to the infernal tethers.");
             return true;
         }
-    }
+    },
+    createItem({
+        id: "moldy_fruit",
+        name: "Moldy Fruit",
+        aliases: ["fruit", "mold"],
+        description: "Half-eaten fruit gone black with mold. It smells sweet and rotten at once.",
+        useLine: "You prod the fruit and release a puff of foul spores. Eating it would be a terrible idea."
+    }),
+    createItem({
+        id: "cult_robes",
+        name: "Cult Robes",
+        aliases: ["robes", "robe"],
+        description: "Dark robes lined with stiff, sulfur-scented cloth.",
+        useLine: "You drape the cult robes over your shoulders. For a moment, the stone around you feels more welcoming."
+    }),
+    createItem({
+        id: "ritual_dagger",
+        name: "Ritual Dagger",
+        aliases: ["dagger", "knife"],
+        description: "A blackened ceremonial dagger etched with infernal curls.",
+        useLine: "The dagger catches no light. Your reflection refuses to appear in the blade."
+    }),
+    createItem({
+        id: "rusted_gear",
+        name: "Rusted Gear",
+        aliases: ["gear", "cog"],
+        description: "A brass gear flaking rust and old machine-grease.",
+        useLine: "The gear grinds in your hand with a tired metallic complaint."
+    }),
+    createItem({
+        id: "silver_bell",
+        name: "Silver Bell",
+        aliases: ["bell"],
+        description: "A small consecrated bell wrapped in faded blue ribbon.",
+        useLine: "You ring the bell. Its clear note cuts through the gloom and leaves the silence shivering."
+    }),
+    createItem({
+        id: "blessed_oil",
+        name: "Blessed Oil",
+        aliases: ["oil"],
+        description: "A stoppered vial of fragrant oil used in warding rites.",
+        useLine: "You anoint your brow with blessed oil. The scent of myrrh and smoke steadies your breathing."
+    }),
+    createItem({
+        id: "sanity_draught",
+        name: "Sanity Draught",
+        aliases: ["draught", "tonic"],
+        description: "A bitter blue tonic that promises to steady a fractured mind.",
+        useLine: "You swallow the draught. The world sharpens and the ringing in your thoughts dims.",
+        onUse: (state) => {
+            state.variables.sanity = Math.min(100, (state.variables.sanity || 100) + 15);
+            return true;
+        }
+    }),
+    createItem({
+        id: "hallucinogen_dust",
+        name: "Hallucinogen Dust",
+        aliases: ["dust", "powder"],
+        description: "A corked packet of iridescent powder that seems to move when you are not looking at it.",
+        useLine: "You uncork the dust and instantly regret it. Colors crawl across the edges of your vision.",
+        onUse: (state) => {
+            state.variables.sanity = Math.max(0, (state.variables.sanity || 100) - 10);
+            return true;
+        }
+    }),
+    createItem({
+        id: "dreamless_poppy",
+        name: "Dreamless Poppy",
+        aliases: ["poppy", "flower"],
+        description: "A dried black-red poppy wrapped in twine.",
+        useLine: "You crush the poppy and breathe in its dusty scent. Sleep suddenly seems closer and less safe."
+    }),
+    createItem({
+        id: "cipher_stone",
+        name: "Cipher Stone",
+        aliases: ["stone", "cipher"],
+        description: "A palm-sized stone carved with shifting symbols from dead alphabets.",
+        useLine: "The symbols on the stone realign under your thumb, almost forming words before they scatter again."
+    }),
+    createItem({
+        id: "sanity_potion",
+        name: "Sanity Potion",
+        aliases: ["potion"],
+        description: "A scavenged bottle of murky medicine traded among the desperate.",
+        useLine: "You drink the potion. It tastes medicinal, stale, and surprisingly comforting.",
+        onUse: (state) => {
+            state.variables.sanity = Math.min(100, (state.variables.sanity || 100) + 10);
+            return true;
+        }
+    }),
+    createItem({
+        id: "goat_mask",
+        name: "Goat Mask",
+        aliases: ["mask", "goat"],
+        description: "A lacquered goat mask with curling horns and a sweat-darkened strap.",
+        useLine: "You hold the mask to your face. Breathing through it makes every sound seem ritualistically important."
+    }),
+    createItem({
+        id: "owl_mask",
+        name: "Owl Mask",
+        aliases: ["owl", "mask"],
+        description: "A painted owl mask whose eyeholes are ringed in dried candle wax.",
+        useLine: "The owl mask narrows your vision into two patient circles."
+    }),
+    createItem({
+        id: "charred_fruit",
+        name: "Charred Fruit",
+        aliases: ["fruit"],
+        description: "Blackened orchard fruit with a hard rind and a bitter smell.",
+        useLine: "You bite into the charred fruit. The taste is awful, but your stomach stops complaining.",
+        onUse: (state) => {
+            state.variables.sanity = Math.max(0, (state.variables.sanity || 100) - 5);
+            return true;
+        }
+    }),
+    createItem({
+        id: "living_ink",
+        name: "Living Ink",
+        aliases: ["ink", "sap"],
+        description: "A vial of red sap that thickens and thins like breathing blood.",
+        useLine: "The ink curls against the glass as if trying to spell your name."
+    })
 ];
 
 const ClaviculaData = {

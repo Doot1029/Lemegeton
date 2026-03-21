@@ -1,5 +1,17 @@
 # LoreJS Update Summary
 
+## Version: 1.2.5
+
+### Changes:
+- **Completed Clavicula World Data**: Implemented every previously referenced Clavicula NPC and item so rooms no longer display "unknown character" or "unknown item" placeholders.
+- **Restored Broken Room Links**: Added the missing `castle_gate`, `sewer_grate`, and `sewer_entrance` connector rooms and repaired disconnected exits so the entire kingdom is reachable from Gallows Square.
+- **Expanded Reachability Fixes**: Added the missing access points for the hidden sacristy, alchemist, coin-counter booth, weeping wall, forbidden library, and cult underways so every existing room can now be explored in play.
+
+### Commit Message Ideas:
+- `fix: implement missing Clavicula NPCs items and connector rooms`
+- `feat: complete the Clavicula world graph and restore room traversal`
+- `fix: remove unknown characters and items from the kingdom data`
+
 ## Version: 1.2.4
 
 ### Changes:
