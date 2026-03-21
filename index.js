@@ -1,64 +1,129 @@
-const LORE = require("lorejs");
-const { LemegetonNovel, registerLemegetonExtensions } = require("./lemegeton.js");
-const fs = require("fs");
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const path = require("path");
+const fs = require("fs");
 
-const game = new LORE.Game({
-  prompt: "{{bold}}{{cyan}}LEMEGETON{{color_reset}} > ",
-  typingSpeed: 20
-});
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-async function start() {
-  const saves = getSaves();
-  const slots = Object.keys(saves);
+const PORT = process.env.PORT || 3000;
 
-  game.printLine("{{bold}}{{yellow}}--- GAME MENU ---{{font_reset}}");
-  game.printLine("1. New Game");
-  
-  if (slots.length > 0) {
-    slots.forEach((slot, index) => {
-      const date = new Date(saves[slot].timestamp);
-      game.printLine(`${index + 2}. Load Slot: ${slot} - ${date.toLocaleString()}`);
-    });
+// Serve static files
+app.use(express.static(__dirname));
+app.use("/lorejs", express.static(path.join(__dirname, "node_modules", "lorejs")));
+
+// Session management
+const sessions = new Map();
+
+function generateSessionCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
+  return code;
+}
 
-  game.rl.question("Select an option: ", async (answer) => {
-    const choice = parseInt(answer);
-    if (choice === 1) {
-      await game.loadNovel(LemegetonNovel);
-      await registerLemegetonExtensions(game);
-      game.printLine(LemegetonNovel.introText);
-    } else if (choice >= 2 && choice <= slots.length + 1) {
-      const slot = slots[choice - 2];
-      game.state.flags.loadingSave = true;
-      await game.loadNovel(LemegetonNovel);
-      await registerLemegetonExtensions(game);
-      game.state.flags.loadingSave = false;
-      game.loadGame(slot);
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+
+  socket.on("create_session", (data) => {
+    let code = generateSessionCode();
+    while (sessions.has(code)) {
+      code = generateSessionCode();
+    }
+
+    const session = {
+      code,
+      host: socket.id,
+      players: new Map([[socket.id, { name: data.name || "Adventurer", id: socket.id }]]),
+      isPublic: false,
+      gameState: data.gameState || {}
+    };
+
+    sessions.set(code, session);
+    socket.join(code);
+    socket.emit("session_created", { code, isPublic: session.isPublic });
+    console.log(`Session created: ${code}`);
+  });
+
+  socket.on("join_session", (data) => {
+    const code = data.code?.toUpperCase();
+    const session = sessions.get(code);
+
+    if (session) {
+      session.players.set(socket.id, { name: data.name || "Adventurer", id: socket.id });
+      socket.join(code);
+      socket.emit("session_joined", { 
+        code, 
+        isPublic: session.isPublic,
+        players: Array.from(session.players.values())
+      });
+      socket.to(code).emit("player_joined", { name: data.name || "Adventurer", id: socket.id });
+      console.log(`User ${socket.id} joined session ${code}`);
     } else {
-      game.printLine("Invalid option.");
-      start();
+      socket.emit("error", { message: "Session not found." });
     }
   });
-}
 
-function getSaves() {
-  const saves = {};
-  const saveDir = path.join(__dirname, "node_modules", "lorejs", "saves");
-  if (fs.existsSync(saveDir)) {
-    const files = fs.readdirSync(saveDir);
-    files.forEach(file => {
-      if (file.startsWith("save_") && file.endsWith(".json")) {
-        const slot = file.replace("save_", "").replace(".json", "");
-        const savePath = path.join(saveDir, file);
-        try {
-          const saveData = JSON.parse(fs.readFileSync(savePath, "utf8"));
-          saves[slot] = saveData;
-        } catch (e) {}
+  socket.on("join_random", (data) => {
+    const publicSessions = Array.from(sessions.values()).filter(s => s.isPublic);
+    if (publicSessions.length > 0) {
+      const session = publicSessions[Math.floor(Math.random() * publicSessions.length)];
+      const code = session.code;
+      session.players.set(socket.id, { name: data.name || "Adventurer", id: socket.id });
+      socket.join(code);
+      socket.emit("session_joined", { 
+        code, 
+        isPublic: session.isPublic,
+        players: Array.from(session.players.values())
+      });
+      socket.to(code).emit("player_joined", { name: data.name || "Adventurer", id: socket.id });
+    } else {
+      socket.emit("error", { message: "No public sessions available." });
+    }
+  });
+
+  socket.on("toggle_privacy", (data) => {
+    const session = Array.from(sessions.values()).find(s => s.host === socket.id);
+    if (session) {
+      session.isPublic = !session.isPublic;
+      io.to(session.code).emit("privacy_toggled", { isPublic: session.isPublic });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+    for (const [code, session] of sessions.entries()) {
+      if (session.players.has(socket.id)) {
+        session.players.delete(socket.id);
+        io.to(code).emit("player_left", { id: socket.id });
+        
+        if (session.players.size === 0) {
+          sessions.delete(code);
+          console.log(`Session ${code} closed.`);
+        } else if (session.host === socket.id) {
+          session.host = Array.from(session.players.keys())[0];
+        }
       }
-    });
-  }
-  return saves;
-}
+    }
+  });
 
-start();
+  // Relay game actions for MUD
+  socket.on("game_action", (data) => {
+    const session = Array.from(sessions.values()).find(s => s.players.has(socket.id));
+    if (session) {
+      socket.to(session.code).emit("player_action", {
+        playerId: socket.id,
+        playerName: session.players.get(socket.id).name,
+        action: data.action
+      });
+    }
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});

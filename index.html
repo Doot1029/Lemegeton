@@ -45,7 +45,7 @@
             overflow: hidden;
             color: #ffb000;
             text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
-            cursor: none; /* Hide default cursor */
+            cursor: auto;
         }
         /* Style Lore terminal to fit inside PSone container */
         .lore-terminal {
@@ -85,6 +85,7 @@
             flex-direction: column;
             font-family: 'silver', sans-serif;
             color: #ffb000;
+            cursor: none !important;
         }
 
         .menu-header {
@@ -150,9 +151,8 @@
             display: none !important;
         }
 
-        /* Ensure no cursor showing on inputs */
+        /* Ensure no cursor showing on inputs in menu or elsewhere if needed */
         .lore-input {
-            cursor: none !important;
             caret-color: transparent !important;
         }
         /* Ensure all spans inside terminal also glow with their color */
@@ -199,7 +199,7 @@
             box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: row;
-            cursor: url('cursor.png');
+            cursor: url('cursor.png'), auto;
             box-sizing: border-box;
             overflow: hidden;
             margin: 0;
@@ -337,24 +337,51 @@
         <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 10px 0;">
         <div class="info-content">
             <p>Subject: Lemegeton</p>
-            <p>Status: <span style="color: #00ff00; text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;">Connected</span></p>
+            <p>Status: <span id="connection-status" style="color: #ffb000; text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;">Connecting...</span></p>
+            <p>Session: <span id="session-code" style="color: #ffb000;">------</span></p>
+            <p>Privacy: <span id="privacy-status" style="color: #ffb000;">Private</span></p>
             <p style="margin-top: 20px; font-size: 1.4rem; color: #ffb000; text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;">
                 "The split between worlds is but a thin line."
             </p>
         </div>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="node_modules/lorejs/lore.js"></script>
+    <script src="clavicula.js"></script>
     <script src="lemegeton.js"></script>
     <script>
-      const game = new LORE.Game();
+      let socket;
+      try {
+        socket = io();
+        setupSocketEvents();
+      } catch (e) {
+        console.warn("Socket.io not found, attempting to connect to localhost:3000");
+        // Fallback for when opening as a file
+        const script = document.createElement('script');
+        script.src = 'http://localhost:3000/socket.io/socket.io.js';
+        script.onload = () => { 
+          socket = io('http://localhost:3000'); 
+          setupSocketEvents(); 
+          console.log("Connected to fallback socket server");
+        };
+        document.head.appendChild(script);
+      }
+      
+      const game = new LORE.Game({
+        typingSpeed: 20
+      });
       const menuScreen = document.getElementById('menu-screen');
       const gameScreen = document.querySelector('.graphics-window');
       const menuList = document.getElementById('menu-list');
+      const sessionCodeDisplay = document.getElementById('session-code');
+      const privacyStatusDisplay = document.getElementById('privacy-status');
+      const connectionStatusDisplay = document.getElementById('connection-status');
 
-      document.querySelector('.menu-header').textContent = "LOAD SLOT MENU";
+      document.querySelector('.menu-header').textContent = "Devilish Desires";
 
       let selectedIndex = 0;
       let saveSlots = [];
+      let currentSession = null;
 
       function refreshSaves() {
         let saves = {};
@@ -364,13 +391,17 @@
           console.error("Error loading saves", e);
         }
 
-        saveSlots = Object.keys(saves).map(slot => ({
-          id: slot,
-          title: `Save Slot: ${slot}`,
-          time: new Date(saves[slot].timestamp).toLocaleTimeString(),
-          date: new Date(saves[slot].timestamp).toLocaleDateString(),
-          author: 'Saved Game'
-        }));
+        saveSlots = Object.keys(saves).map(slot => {
+          const isMUD = slot.startsWith('MUD_');
+          return {
+            id: slot,
+            title: isMUD ? `MUD Save: ${slot.replace('MUD_', '')}` : `Local Save: ${slot}`,
+            time: new Date(saves[slot].timestamp).toLocaleTimeString(),
+            date: new Date(saves[slot].timestamp).toLocaleDateString(),
+            author: isMUD ? 'MUD' : 'Local',
+            type: isMUD ? 'mud' : 'local'
+          };
+        });
 
         // Add "New Game" option
         saveSlots.unshift({ id: 'new_game', title: 'Start New Game', time: '-', date: '-', author: 'Lemegeton' });
@@ -382,7 +413,7 @@
             <span class="item-number">${index + 1}</span>
             <span class="item-title">${slot.title}</span>
             <span class="item-time">${slot.time}</span>
-            <span class="item-author">${slot.author === 'Saved Game' ? slot.date : slot.author}</span>
+            <span class="item-author">${slot.author}</span>
           </div>
         `).join('');
       }
@@ -405,8 +436,25 @@
       }
 
       async function startGame(slotInfo) {
+        console.log("Starting game with slot:", slotInfo);
+        if (!window.LemegetonNovel) {
+          console.error("LemegetonNovel not found!");
+          return;
+        }
+        await setupMUDCommands();
+
+        // Create session immediately
+        if (socket) {
+          if (slotInfo.id === 'new_game') {
+            socket.emit('create_session', { name: "Adventurer" });
+          } else {
+            socket.emit('create_session', { name: "Adventurer", gameState: {} }); 
+          }
+        }
+
         menuScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
+        game.inputElement.focus();
         
         if (slotInfo.id !== 'new_game') {
           game.state.flags.loadingSave = true;
@@ -417,14 +465,180 @@
           game.state.flags.loadingSave = false;
           game.loadGame(slotInfo.id);
         } else {
+          game.config.clearScreenOnNovelLoad = false;
+          game.clearScreen();
           await game.loadNovel(window.LemegetonNovel);
+          console.log("Intro text:", window.LemegetonNovel.introText);
+          await game.printLine("{{instant}}" + window.LemegetonNovel.introText + "{{/instant}}");
           if (typeof window.registerLemegetonExtensions === 'function') {
             await window.registerLemegetonExtensions(game);
           }
-          game.printLine(window.LemegetonNovel.introText);
+          
+          // Autosaves
+          const timestamp = Date.now();
+          const localSlot = `autosave_${timestamp}`;
+          const mudSlot = `MUD_autosave_${timestamp}`;
+          game.saveGame(localSlot);
+          game.saveGame(mudSlot);
         }
+      }
+
+      async function setupMUDCommands() {
+        await game.loadPlugin({
+          id: "mud_commands",
+          commands: [
+            {
+              name: "join",
+              help: "Join a MUD session. Use 'join random' or 'join [code]'.",
+              fn: (args, engine) => {
+                if (args.length === 0) {
+                  engine.printLine("Join what? Use 'join random' or 'join [code]'.");
+                  return true;
+                }
+                const target = args[0].toLowerCase();
+                if (socket) {
+                  if (target === 'random') {
+                    socket.emit('join_random', { name: "Adventurer" });
+                  } else {
+                    socket.emit('join_session', { code: target, name: "Adventurer" });
+                  }
+                } else {
+                  engine.printLine("Multiplayer unavailable: No connection to server.");
+                }
+                return true;
+              }
+            },
+            {
+              name: "public",
+              help: "Toggle session privacy to public.",
+              fn: (args, engine) => {
+                if (socket) socket.emit('toggle_privacy');
+                else engine.printLine("Multiplayer unavailable: No connection to server.");
+                return true;
+              }
+            },
+            {
+              name: "private",
+              help: "Toggle session privacy to private.",
+              fn: (args, engine) => {
+                if (socket) socket.emit('toggle_privacy');
+                else engine.printLine("Multiplayer unavailable: No connection to server.");
+                return true;
+              }
+            },
+            {
+              name: "code",
+              help: "Show the current session code.",
+              fn: (args, engine) => {
+                if (currentSession) {
+                  engine.printLine(`Current Session Code: {{bold}}{{yellow}}${currentSession.code}{{font_reset}}`);
+                } else {
+                  engine.printLine("Not in a session.");
+                }
+                return true;
+              }
+            },
+            {
+              name: "who",
+              help: "Show players in the current session.",
+              fn: (args, engine) => {
+                if (game.state.multiplayerPlayers && game.state.multiplayerPlayers.length > 0) {
+                  engine.printLine("{{bold}}Adventurers in this realm:{{font_reset}}");
+                  game.state.multiplayerPlayers.forEach(p => {
+                    engine.printLine(`- ${p.name} ${p.id === socket.id ? '(you)' : ''}`);
+                  });
+                } else {
+                  engine.printLine("You are alone in this realm.");
+                }
+                return true;
+              }
+            }
+          ]
+        });
+
+        // Intercept all commands to broadcast to MUD
+        if (!game._processInputOverridden) {
+          const originalProcessInput = game.processInput;
+          game.processInput = function(input) {
+            const result = originalProcessInput.call(this, input);
+            if (socket && currentSession && input.trim()) {
+              socket.emit('game_action', { action: input });
+            }
+            return result;
+          };
+          game._processInputOverridden = true;
+        }
+      }
+
+      // Socket Events
+      function setupSocketEvents() {
+        if (!socket) return;
         
-        // Removed redundant game.start() call
+        socket.on('connect', () => {
+          connectionStatusDisplay.textContent = "Connected";
+          connectionStatusDisplay.style.color = "#00ff00";
+        });
+
+        socket.on('disconnect', () => {
+          connectionStatusDisplay.textContent = "Disconnected";
+          connectionStatusDisplay.style.color = "#ff0000";
+        });
+
+        socket.on('session_created', (data) => {
+          currentSession = data;
+          sessionCodeDisplay.textContent = data.code;
+          privacyStatusDisplay.textContent = data.isPublic ? "Public" : "Private";
+          game.printLine(`{{cyan}}Session created! Code: {{bold}}${data.code}{{font_reset}}`);
+        });
+
+        socket.on('session_joined', (data) => {
+          currentSession = data;
+          sessionCodeDisplay.textContent = data.code;
+          privacyStatusDisplay.textContent = data.isPublic ? "Public" : "Private";
+          game.state.multiplayerPlayers = data.players;
+          game.clearScreen();
+          game.printLine(`{{cyan}}Joined session: {{bold}}${data.code}{{font_reset}}`);
+          game.printLine(`Players here: ${data.players.map(p => p.name).join(', ')}`);
+        });
+
+        socket.on('player_joined', (data) => {
+          if (!game.state.multiplayerPlayers) game.state.multiplayerPlayers = [];
+          game.state.multiplayerPlayers.push(data);
+          game.printLine(`{{yellow}}${data.name} has entered the world.{{font_reset}}`);
+        });
+
+        socket.on('player_left', (data) => {
+          if (game.state.multiplayerPlayers) {
+            game.state.multiplayerPlayers = game.state.multiplayerPlayers.filter(p => p.id !== data.id);
+          }
+          game.printLine(`{{red}}Someone has left the world.{{font_reset}}`);
+        });
+
+        socket.on('player_action', (data) => {
+          game.printLine(`{{italic}}${data.playerName} performs: ${data.action}{{font_reset}}`);
+          
+          // Auto-follow logic
+          const action = data.action.toLowerCase().trim();
+          const isMovement = action.startsWith('go ') || ['north', 'south', 'east', 'west', 'up', 'down', 'n', 's', 'e', 'w', 'u', 'd', 'ne', 'nw', 'se', 'sw', 'in', 'out'].includes(action);
+          
+          if (isMovement && (game.state.flags.following === data.playerId || game.state.flags.following === data.playerName.toLowerCase())) {
+            setTimeout(() => {
+              game.processInput(data.action);
+            }, 500); // Small delay for "realism"
+          }
+        });
+
+        socket.on('privacy_toggled', (data) => {
+          if (currentSession) {
+            currentSession.isPublic = data.isPublic;
+            privacyStatusDisplay.textContent = data.isPublic ? "Public" : "Private";
+            game.printLine(`Session is now {{bold}}${data.isPublic ? "PUBLIC" : "PRIVATE"}{{font_reset}}.`);
+          }
+        });
+
+        socket.on('error', (data) => {
+          game.printLine(`{{red}}Error: ${data.message}{{font_reset}}`);
+        });
       }
 
       function attachTerminalToMount() {

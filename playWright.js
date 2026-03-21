@@ -7,18 +7,29 @@ const path = require('path');
     });
     const page = await browser.newPage();
     
+    page.on('console', msg => {
+        const type = msg.type();
+        const text = msg.text();
+        console.log(`BROWSER ${type.toUpperCase()}:`, text);
+    });
+    
+    page.on('pageerror', err => {
+        console.log('BROWSER EXCEPTION:', err.message);
+    });
+    
     // Set viewport size for a consistent screenshot
+
     await page.setViewportSize({ width: 1280, height: 720 });
 
-    const filePath = 'file://' + path.resolve(__dirname, 'index.html');
+    const filePath = 'http://localhost:3000';
     
     try {
         await page.goto(filePath, { waitUntil: 'networkidle' });
         
         // Wait for menu screen or terminal
-        await page.waitForSelector('#menu-screen, .lore-terminal');
+        await page.waitForSelector('#menu-screen:not(.hidden)');
         // Small additional wait to ensure novel is loaded and currentRoom is set
-        await page.waitForTimeout(5000);
+        await page.waitForTimeout(10000);
         
         const screenshotPath = path.resolve(__dirname, 'ai-context/images/graphics-window.png');
         await page.screenshot({ path: screenshotPath, fullPage: true });
@@ -26,14 +37,27 @@ const path = require('path');
 
         // Press Enter to start Lemegeton
         await page.keyboard.press('Enter');
+
+        // Wait for terminal output (increased timeout for long intro)
+        await page.waitForSelector('.lore-output-line', { timeout: 60000 }).catch(() => {});
         
-        // Wait for terminal output
-        await page.waitForSelector('.lore-output-line', { timeout: 5000 }).catch(() => {});
-        await page.waitForTimeout(2000);
+        // Wait for session code to appear (after intro)
+        await page.waitForFunction(() => {
+            const el = document.getElementById('session-code');
+            return el && el.textContent !== '------';
+        }, { timeout: 60000 }).catch(() => console.log("Session code didn't appear in time"));
+
+        await page.waitForTimeout(15000);
+
+        // Type 'look' to see the world
+        await page.keyboard.type('look');
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(5000);
         
         const gameScreenshotPath = path.resolve(__dirname, 'ai-context/images/gameplay.png');
         await page.screenshot({ path: gameScreenshotPath, fullPage: true });
         console.log(`Gameplay screenshot saved to ${gameScreenshotPath}`);
+
     } catch (error) {
         console.error('Error taking screenshot:', error);
     } finally {
