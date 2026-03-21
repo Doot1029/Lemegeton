@@ -19,6 +19,124 @@
     name: "Lemegeton Reading Plugin",
     commands: [
       {
+        name: "look",
+        aliases: ["l", "see", "examine", "inspect"],
+        help: "Look around or examine a specific item or character.",
+        fn: (args, engine) => {
+          if (args.length === 0) {
+            engine.look();
+            return true;
+          }
+
+          return examineTarget(args.join(" "), engine);
+        }
+      },
+      {
+        name: "talk",
+        display: "talk [character] about [topic]",
+        help: "Talk to someone or ask about a specific topic.",
+        fn: (args, engine) => {
+          const room = engine.world.rooms.get(engine.state.currentRoom);
+          if (!args.length) {
+            if (!room || !room.characters || room.characters.length === 0) {
+              engine.printLine("Talk to whom? There's no one here.");
+              return true;
+            }
+
+            engine.printLine("Who would you like to talk to?");
+            const charList = room.characters
+              .map((id) => {
+                const character = engine.world.characters.get(id);
+                if (!character) {
+                  return "unknown character";
+                }
+
+                let display = `- ${character.name}`;
+                if (character.aliases?.length) {
+                  display += ` (also: ${character.aliases.join(", ")})`;
+                }
+                if (character.genre && room.characters.length === 1) {
+                  display += ` or use "talk ${character.genre === "male" ? "him" : "her"}"`;
+                }
+                return display;
+              })
+              .join("\n");
+            engine.printLine(charList);
+            return true;
+          }
+
+          if (!room || !room.characters || room.characters.length === 0) {
+            engine.printLine("There's no one here to talk to.");
+            return true;
+          }
+
+          const aboutIndex = args.findIndex((arg) => arg.toLowerCase() === "about");
+          const characterQuery = aboutIndex === -1
+            ? args.join(" ")
+            : args.slice(0, aboutIndex).join(" ");
+          const topicQuery = aboutIndex === -1
+            ? ""
+            : args.slice(aboutIndex + 1).join(" ");
+
+          const character = findCharacterInRoom(characterQuery, room, engine);
+          if (!character) {
+            engine.printLine("You don't see that person here.");
+            return true;
+          }
+
+          if (!topicQuery) {
+            if (character.talk) {
+              character.talk(engine.state, engine);
+            } else {
+              engine.printLine(`${character.shortName || character.name} has nothing to say to you right now.`);
+            }
+            return true;
+          }
+
+          const normalizedTopicQuery = normalizeForMatch(topicQuery);
+          if (normalizedTopicQuery === "random") {
+            const availableTopics = getAvailableTopics(engine.state, character);
+            if (!availableTopics.length) {
+              engine.printLine(`${character.shortName || character.name} has nothing more to say right now.`);
+              return true;
+            }
+
+            const [topicKey, topicData] = availableTopics[Math.floor(Math.random() * availableTopics.length)];
+            const topicLabel = getTopicLabel(topicKey, topicData);
+            if (typeof character.randomTopicIntro === "function") {
+              engine.printLine(character.randomTopicIntro(topicLabel));
+            }
+            topicData.dialog(engine.state, engine);
+            if (topicData.setFlag) {
+              engine.state.flags[topicData.setFlag] = true;
+            }
+            return true;
+          }
+
+          const matchedTopic = findTopicForCharacter(character, topicQuery);
+          if (!matchedTopic) {
+            engine.printLine(`${character.shortName || character.name} doesn't seem to know anything about "${topicQuery.toLowerCase()}".`);
+            return true;
+          }
+
+          const [topicKey, topicData] = matchedTopic;
+          if (topicData.condition && !topicData.condition(engine.state)) {
+            engine.printLine(topicData.blockedMessage || `${character.name} doesn't want to talk about that right now.`);
+            return true;
+          }
+
+          topicData.dialog(engine.state, engine);
+          if (topicData.setFlag) {
+            engine.state.flags[topicData.setFlag] = true;
+          }
+          unlockTopic(engine.state, character.id, topicKey);
+          if (topicData.relationship) {
+            setRelationship(engine.state, character.id, topicData.relationship);
+          }
+          return true;
+        }
+      },
+      {
         name: "follow",
         display: "follow [character/player]",
         help: "Follow a character or player from room to room.",
@@ -28,7 +146,7 @@
             return true;
           }
 
-          const query = args.join(" ").toLowerCase();
+          const query = normalizeForMatch(args.join(" "));
           const room = engine.world.rooms.get(engine.state.currentRoom);
           
           // Find NPC
@@ -41,9 +159,13 @@
 
           // Multiplayer Player following
           if (engine.state.multiplayerPlayers) {
-            const player = engine.state.multiplayerPlayers.find(p => 
-              p.name.toLowerCase().includes(query) || p.id.toLowerCase() === query
-            );
+            const player = engine.state.multiplayerPlayers.find((p) => {
+              if (p.id === engine.state.multiplayerSelfId) {
+                return false;
+              }
+
+              return normalizeForMatch(p.name).includes(query) || normalizeForMatch(p.id) === query;
+            });
             if (player) {
               engine.state.flags.following = player.id;
               engine.printLine(`You are now following the adventurer ${player.name}.`);
@@ -51,7 +173,7 @@
             }
           }
 
-          engine.printLine(`You don't see '${query}' here.`);
+          engine.printLine(`You don't see '${args.join(" ")}' here.`);
           return true;
         }
       },
@@ -269,19 +391,146 @@
   }
 
   function findCharacterInRoom(query, room, engine) {
+    const normalizedQuery = normalizeForMatch(query);
     for (const characterId of room.characters) {
       const character = engine.world.characters.get(characterId);
       if (!character) {
         continue;
       }
-      if (character.name.toLowerCase().includes(query)) {
+      if (matchesQuery(character.name, normalizedQuery) || matchesQuery(character.id, normalizedQuery)) {
         return character;
       }
-      if (character.aliases && character.aliases.some((alias) => alias.toLowerCase().includes(query))) {
+      if (character.aliases && character.aliases.some((alias) => matchesQuery(alias, normalizedQuery))) {
         return character;
+      }
+      if (character.genre && room.characters.length === 1) {
+        if ((character.genre === "female" && (normalizedQuery === "her" || normalizedQuery === "she")) ||
+            (character.genre === "male" && (normalizedQuery === "him" || normalizedQuery === "he"))) {
+          return character;
+        }
       }
     }
     return null;
+  }
+
+  function normalizeForMatch(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function matchesQuery(value, normalizedQuery) {
+    return normalizeForMatch(value).includes(normalizedQuery);
+  }
+
+  function getTopicSearchTerms(topicKey, topicData = {}) {
+    const terms = [topicKey, topicData.label, ...(topicData.aliases || [])]
+      .filter(Boolean)
+      .flatMap((term) => {
+        const normalized = normalizeForMatch(term);
+        const variants = [normalized];
+        if (normalized.startsWith("the ")) {
+          variants.push(normalized.slice(4));
+        }
+        return variants;
+      });
+
+    return [...new Set(terms.filter(Boolean))];
+  }
+
+  function findTopicForCharacter(character, topicQuery) {
+    const normalizedTopicQuery = normalizeForMatch(topicQuery);
+    if (!character.topics) {
+      return null;
+    }
+
+    for (const [topicKey, topicData] of Object.entries(character.topics)) {
+      if (topicKey === "random" || !topicData || typeof topicData.dialog !== "function") {
+        continue;
+      }
+
+      const topicTerms = getTopicSearchTerms(topicKey, topicData);
+      if (topicTerms.some((term) => term.includes(normalizedTopicQuery) || normalizedTopicQuery.includes(term))) {
+        return [topicKey, topicData];
+      }
+    }
+
+    return null;
+  }
+
+  function getAvailableTopics(state, character) {
+    if (!character.topics) {
+      return [];
+    }
+
+    return Object.entries(character.topics).filter(([topicKey, topicData]) => {
+      if (topicKey === "random" || !topicData || typeof topicData.dialog !== "function") {
+        return false;
+      }
+      return !topicData.condition || topicData.condition(state);
+    });
+  }
+
+  function getTopicLabel(topicKey, topicData = {}) {
+    return topicData.label || normalizeForMatch(topicKey);
+  }
+
+  function findItemByQuery(query, room, engine) {
+    const normalizedQuery = normalizeForMatch(query);
+    const candidateIds = [
+      ...(room?.items || []),
+      ...engine.state.inventory
+    ];
+
+    for (const itemId of candidateIds) {
+      const item = engine.world.items.get(itemId);
+      if (!item) {
+        continue;
+      }
+
+      if (matchesQuery(item.name, normalizedQuery) || matchesQuery(item.id, normalizedQuery)) {
+        return item;
+      }
+      if (item.aliases && item.aliases.some((alias) => matchesQuery(alias, normalizedQuery))) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  function examineTarget(query, engine) {
+    const room = engine.world.rooms.get(engine.state.currentRoom);
+    if (!room) {
+      engine.printLine("You are in the void.");
+      return true;
+    }
+
+    const normalizedQuery = normalizeForMatch(query);
+    if (!normalizedQuery || normalizedQuery === "room" || normalizedQuery === "here" || normalizedQuery === "around") {
+      engine.look();
+      return true;
+    }
+
+    const character = findCharacterInRoom(query, room, engine);
+    if (character) {
+      engine.printLine(character.description || `${character.shortName || character.name} is difficult to make out.`);
+      return true;
+    }
+
+    const item = findItemByQuery(query, room, engine);
+    if (item) {
+      if (typeof item.look === "function") {
+        item.look(engine.state, engine);
+      } else {
+        engine.printLine(item.description || `It's ${item.shortName || item.name}.`);
+      }
+      return true;
+    }
+
+    engine.printLine("You don't see that here.");
+    return true;
   }
 
   function enableTopicDiscovery(character) {
@@ -309,11 +558,13 @@
   async function registerLemegetonExtensions(engine) {
     await engine.loadPlugin(LemegetonPlugin);
 
-    const bartender = engine.world.characters.get("bartender");
-    if (bartender) {
-      enableTopicDiscovery(bartender);
-      ensureCharacterTracking(engine.state, bartender.id);
-    }
+    engine.world.characters.forEach((character) => {
+      if (!character?.id) {
+        return;
+      }
+      enableTopicDiscovery(character);
+      ensureCharacterTracking(engine.state, character.id);
+    });
   }
 
   function readPage(n, engine, book) {

@@ -383,6 +383,124 @@
       let saveSlots = [];
       let currentSession = null;
 
+      function normalizeMUDQuery(value) {
+        return String(value || '')
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      function ensureGameFlags() {
+        if (!game.state.flags) {
+          game.state.flags = {};
+        }
+      }
+
+      function setMultiplayerPlayers(players) {
+        const dedupedPlayers = [];
+        const seen = new Set();
+
+        (players || []).forEach((player) => {
+          if (!player || seen.has(player.id)) {
+            return;
+          }
+          seen.add(player.id);
+          dedupedPlayers.push(player);
+        });
+
+        game.state.multiplayerPlayers = dedupedPlayers;
+      }
+
+      function upsertMultiplayerPlayer(player) {
+        if (!player) {
+          return;
+        }
+
+        const players = Array.isArray(game.state.multiplayerPlayers) ? [...game.state.multiplayerPlayers] : [];
+        const existingIndex = players.findIndex((entry) => entry.id === player.id);
+        if (existingIndex === -1) {
+          players.push(player);
+        } else {
+          players[existingIndex] = { ...players[existingIndex], ...player };
+        }
+
+        setMultiplayerPlayers(players);
+      }
+
+      function removeMultiplayerPlayer(playerId) {
+        if (!Array.isArray(game.state.multiplayerPlayers)) {
+          return;
+        }
+
+        setMultiplayerPlayers(game.state.multiplayerPlayers.filter((player) => player.id !== playerId));
+      }
+
+      function describeRemoteAction(playerName, action) {
+        const trimmedAction = String(action || '').trim();
+        const normalizedAction = normalizeMUDQuery(trimmedAction);
+        const movementDirections = {
+          n: 'north',
+          s: 'south',
+          e: 'east',
+          w: 'west',
+          ne: 'northeast',
+          nw: 'northwest',
+          se: 'southeast',
+          sw: 'southwest',
+          u: 'up',
+          d: 'down',
+          i: 'in',
+          o: 'out'
+        };
+
+        if (!trimmedAction) {
+          return `{{italic}}${playerName} shifts in the dark.{{font_reset}}`;
+        }
+
+        const movement = normalizedAction.startsWith('go ')
+          ? normalizedAction.slice(3)
+          : movementDirections[normalizedAction] || normalizedAction;
+        const cardinalDirections = [
+          'north', 'south', 'east', 'west',
+          'northeast', 'northwest', 'southeast', 'southwest',
+          'up', 'down', 'in', 'out'
+        ];
+
+        if (cardinalDirections.includes(movement)) {
+          return `{{italic}}${playerName} heads ${movement}.{{font_reset}}`;
+        }
+        if (normalizedAction === 'look') {
+          return `{{italic}}${playerName} studies the surroundings.{{font_reset}}`;
+        }
+        if (normalizedAction.startsWith('talk ')) {
+          const [, rest] = trimmedAction.split(/talk\s+/i);
+          return `{{italic}}${playerName} tries to strike up a conversation about ${rest || 'something unsettling'}.{{font_reset}}`;
+        }
+        if (normalizedAction.startsWith('say ')) {
+          return `{{italic}}${playerName} says, "${trimmedAction.slice(4)}"{{font_reset}}`;
+        }
+        if (normalizedAction.startsWith('follow ')) {
+          return `{{italic}}${playerName} falls in behind ${trimmedAction.slice(7)}.{{font_reset}}`;
+        }
+        if (normalizedAction.startsWith('take ')) {
+          return `{{italic}}${playerName} picks up ${trimmedAction.slice(5)}.{{font_reset}}`;
+        }
+        if (normalizedAction.startsWith('drop ')) {
+          return `{{italic}}${playerName} drops ${trimmedAction.slice(5)}.{{font_reset}}`;
+        }
+        if (normalizedAction.startsWith('use ')) {
+          return `{{italic}}${playerName} uses ${trimmedAction.slice(4)}.{{font_reset}}`;
+        }
+        if (normalizedAction.startsWith('read ')) {
+          return `{{italic}}${playerName} pores over ${trimmedAction.slice(5)}.{{font_reset}}`;
+        }
+        if (normalizedAction === 'sleep') {
+          return `{{italic}}${playerName} settles down to sleep.{{font_reset}}`;
+        }
+
+        return `{{italic}}${playerName} ${trimmedAction}.{{font_reset}}`;
+      }
+
       function refreshSaves() {
         let saves = {};
         try {
@@ -559,9 +677,10 @@
         // Intercept all commands to broadcast to MUD
         if (!game._processInputOverridden) {
           const originalProcessInput = game.processInput;
+          game._originalProcessInput = originalProcessInput;
           game.processInput = function(input) {
             const result = originalProcessInput.call(this, input);
-            if (socket && currentSession && input.trim()) {
+            if (!this._suppressMUDRelay && socket && currentSession && input.trim()) {
               socket.emit('game_action', { action: input });
             }
             return result;
@@ -577,6 +696,7 @@
         socket.on('connect', () => {
           connectionStatusDisplay.textContent = "Connected";
           connectionStatusDisplay.style.color = "#00ff00";
+          game.state.multiplayerSelfId = socket.id;
         });
 
         socket.on('disconnect', () => {
@@ -588,6 +708,8 @@
           currentSession = data;
           sessionCodeDisplay.textContent = data.code;
           privacyStatusDisplay.textContent = data.isPublic ? "Public" : "Private";
+          game.state.multiplayerSelfId = socket.id;
+          setMultiplayerPlayers([{ name: "Adventurer", id: socket.id }]);
           game.printLine(`{{cyan}}Session created! Code: {{bold}}${data.code}{{font_reset}}`);
         });
 
@@ -595,35 +717,45 @@
           currentSession = data;
           sessionCodeDisplay.textContent = data.code;
           privacyStatusDisplay.textContent = data.isPublic ? "Public" : "Private";
-          game.state.multiplayerPlayers = data.players;
+          game.state.multiplayerSelfId = socket.id;
+          setMultiplayerPlayers(data.players);
           game.clearScreen();
           game.printLine(`{{cyan}}Joined session: {{bold}}${data.code}{{font_reset}}`);
           game.printLine(`Players here: ${data.players.map(p => p.name).join(', ')}`);
         });
 
         socket.on('player_joined', (data) => {
-          if (!game.state.multiplayerPlayers) game.state.multiplayerPlayers = [];
-          game.state.multiplayerPlayers.push(data);
+          upsertMultiplayerPlayer(data);
           game.printLine(`{{yellow}}${data.name} has entered the world.{{font_reset}}`);
         });
 
         socket.on('player_left', (data) => {
-          if (game.state.multiplayerPlayers) {
-            game.state.multiplayerPlayers = game.state.multiplayerPlayers.filter(p => p.id !== data.id);
+          removeMultiplayerPlayer(data.id);
+          ensureGameFlags();
+          if (game.state.flags.following === data.id) {
+            delete game.state.flags.following;
+            game.printLine("{{yellow}}You lose track of the one you were following.{{font_reset}}");
           }
           game.printLine(`{{red}}Someone has left the world.{{font_reset}}`);
         });
 
         socket.on('player_action', (data) => {
-          game.printLine(`{{italic}}${data.playerName} performs: ${data.action}{{font_reset}}`);
+          ensureGameFlags();
+          game.printLine(describeRemoteAction(data.playerName, data.action));
           
           // Auto-follow logic
-          const action = data.action.toLowerCase().trim();
+          const action = normalizeMUDQuery(data.action);
           const isMovement = action.startsWith('go ') || ['north', 'south', 'east', 'west', 'up', 'down', 'n', 's', 'e', 'w', 'u', 'd', 'ne', 'nw', 'se', 'sw', 'in', 'out'].includes(action);
           
-          if (isMovement && (game.state.flags.following === data.playerId || game.state.flags.following === data.playerName.toLowerCase())) {
+          if (isMovement && (game.state.flags.following === data.playerId || normalizeMUDQuery(game.state.flags.following) === normalizeMUDQuery(data.playerName))) {
             setTimeout(() => {
-              game.processInput(data.action);
+              game._suppressMUDRelay = true;
+              try {
+                const processInput = game._originalProcessInput || game.processInput;
+                processInput.call(game, data.action);
+              } finally {
+                game._suppressMUDRelay = false;
+              }
             }, 500); // Small delay for "realism"
           }
         });

@@ -1,5 +1,18 @@
 # LoreJS Update Summary
 
+## Version: 1.2.6
+
+### Changes:
+- **Fixed Multiplayer Following**: Updated MUD follow targeting to prefer other connected players over your own character, initialized player tracking for newly created sessions, and prevented auto-followed movement from rebroadcasting back into the session.
+- **Improved Topic Conversations**: Replaced the default talk parser with a Clavicula-aware version that supports `talk [character] about [specific topic]` more reliably, including multi-word topics like "the axe" and random topic selection.
+- **Added Character & Object Examination**: Expanded `look`/`examine` so players can inspect characters as well as room and inventory items and receive each target's description.
+- **Reworked Remote Action Text**: Replaced the raw `<player> performs: <input>` multiplayer log output with more MUD-like descriptions such as movement, speech, and interaction summaries.
+
+### Commit Message Ideas:
+- `fix: repair multiplayer follow syncing and relay loops`
+- `feat: support specific topic conversations and random talk prompts`
+- `feat: add character examination and mud-style remote action text`
+
 ## Version: 1.2.5
 
 ### Changes:
